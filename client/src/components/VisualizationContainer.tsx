@@ -1,33 +1,35 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import TokenVisualization from './TokenVisualization';
+import { visualizeApi, VisualizeResponse } from '../services/api';
 
 const VisualizationContainer: React.FC = () => {
-  // 테스트용 입력과 출력 텍스트
-  const inputText = 'I like a dog.';
-  const outputText = 'me too';
+  // 테스트용 입력, 이후에는 유저의 요청에 맞는 입력으로 바꿀거임 
+  const inputText = 'The quick brown fox jumps over the lazy dog.';
+  const [visualizationData, setVisualizationData] = useState<VisualizeResponse | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // 테스트용 벡터 생성성
-  const vectors = useMemo(() => {
-    const minRange = -3;
-    const maxRange = 3;
-
-    const positions: number[][] = [];
-    
-    for (let i = 0; i < 7; i++) {
-      // "a" 토큰 (인덱스 2)이 겹치도록: like의 위치와 동일하게 설정
-      // 이후에는 길이가 0인 벡터가 생기면 이 화살촉 위에 글자가 생기도록 수정할것임
-      if (i === 2) {
-        positions.push([...positions[1]]);
-      } else {
-        const x = Math.random() * (maxRange - minRange) + minRange;
-        const y = Math.random() * (maxRange - minRange) + minRange;
-        const z = Math.random() * (maxRange - minRange) + minRange;
-        positions.push([x, y, z]);
+  // POST
+  useEffect(() => {
+    const fetchOutput = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const result = await visualizeApi.getTokenVectors(inputText);
+        setVisualizationData({
+          tokens: result.tokens,
+        });
+      } catch (err) {
+        console.error('Error fetching output:', err);
+        setError('Failed to fetch output');
+      } finally {
+        setIsLoading(false);
       }
-    }
-    
-    return positions;
-  }, []);
+    };
+
+    fetchOutput();
+  }, [inputText]);
 
   return (
     <div className="App">
@@ -46,14 +48,19 @@ const VisualizationContainer: React.FC = () => {
           <strong style={{ color: '#52c41a' }}>Input:</strong> {inputText}
         </div>
         <div>
-          <strong style={{ color: '#ff4d4f' }}>Output:</strong> {outputText}
+          <strong style={{ color: '#ff4d4f' }}>Output:</strong> {isLoading ? 'Loading...' : visualizationData?.tokens.filter(t => !t.is_input).map(t => t.token).join(' ')}
         </div>
+        {error && (
+          <div style={{ marginTop: '10px', color: '#ff4d4f', fontSize: '12px' }}>
+            {error}
+          </div>
+        )}
       </div>
-      <TokenVisualization
-        inputText={inputText}
-        outputText={outputText}
-        vectors={vectors}
-      />
+      {visualizationData && !isLoading && (
+        <TokenVisualization
+          tokens={visualizationData.tokens}
+        />
+      )}
     </div>
   );
 };

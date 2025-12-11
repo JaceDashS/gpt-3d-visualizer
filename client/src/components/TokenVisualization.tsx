@@ -1,7 +1,9 @@
-import React, { useMemo, useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Text } from '@react-three/drei';
 import * as THREE from 'three';
+
+import { TokenVector } from '../services/api';
 
 interface TokenData {
   token: string;
@@ -10,9 +12,7 @@ interface TokenData {
 }
 
 interface TokenVisualizationProps {
-  inputText: string;
-  outputText: string;
-  vectors: number[][]; // 각 토큰의 도착점 좌표 배열
+  tokens: TokenVector[]; // 토큰과 벡터 정보가 함께 묶인 배열
 }
 
 // 벡터 화살표 컴포넌트 (시작점-끝점 방식)
@@ -68,7 +68,8 @@ const VectorArrow: React.FC<{
   return <primitive object={arrow} />;
 };
 
-// 토큰 텍스트 컴포넌트 (선 위에 표시, 항상 카메라를 향하며 world up 방향으로 offset)
+// 토큰 텍스트 컴포넌트 
+// 선 위에 항상 카메라를 향하는 텍스트 표시
 const TokenPoint: React.FC<{
   position: [number, number, number];
   token: string;
@@ -101,89 +102,153 @@ const TokenPoint: React.FC<{
   );
 };
 
-
-//이건 클라이언트에서 임의로 벡터를 생성하는거라 나중에 지울거임
+//전체 시각화 (좌표나 화살표등을 랜더링해줌)
 const TokenVisualization: React.FC<TokenVisualizationProps> = ({
-  inputText,
-  outputText,
-  vectors,
+  tokens,
 }) => {
-  const inputTokens = useMemo(() => {
-    const tokens: string[] = [];
-    const words = inputText.split(/\s+/).filter((t) => t.length > 0);
-    words.forEach((word) => {
-      const match = word.match(/(\w+)([.,!?;:])?/);
-      if (match) {
-        tokens.push(match[1]);
-        if (match[2]) {
-          tokens.push(match[2]);
+  // 시작점을 클라이언트에서 추적하며 토큰 위치 계산
+  const calculateTokenPositions = (): TokenData[] => {
+    const tokenData: TokenData[] = [];
+    let currentStart: [number, number, number] = [0, 0, 0]; // 첫 번째 벡터는 원점에서 시작
+    
+    let i = 0;
+    while (i < tokens.length) {
+      const tv = tokens[i];
+      const startVec = new THREE.Vector3(...currentStart);
+      const endVec = new THREE.Vector3(...tv.destination);
+      
+      // 방향 벡터 계산
+      const direction = new THREE.Vector3().subVectors(endVec, startVec);
+      const length = direction.length();
+      
+      if (length === 0) {
+        // 연속된 길이0의 벡터가 있는지 찾아야함.
+        // 따로 분류하지 않으면 텍스트가 겹침침
+        const zeroLengthGroup: number[] = [];
+        let j = i;
+        let groupStart = currentStart;
+        
+        // 연속된 길이 0 벡터 수집
+        while (j < tokens.length) {
+          const currentTv = tokens[j];
+          const currentStartVec = new THREE.Vector3(...groupStart);
+          const currentEndVec = new THREE.Vector3(...currentTv.destination);
+          const currentDir = new THREE.Vector3().subVectors(currentEndVec, currentStartVec);
+          
+          if (currentDir.length() === 0) {
+            zeroLengthGroup.push(j);
+            j++;
+            // 다음 그룹의 시작점은 현재 목적지 (변경 없음)
+          } else {
+            break;
+          }
         }
+        
+        // 그룹 내에서 연속된 같은 타입의 토큰들을 묶어서 하나의 텍스트로 표시
+        // 타입이 바뀌면 색상도 바뀌지만 같은 줄에 표시
+        const centerPosition = new THREE.Vector3(tv.destination[0], tv.destination[1], tv.destination[2]);
+        const fontSize = 0.15; // Text 컴포넌트의 fontSize와 일치
+        const charWidth = fontSize * 0.6; // 각 문자의 대략적인 너비
+        const spaceWidth = fontSize * 0.3; // 공백의 너비
+        
+        // 전체 그룹의 총 너비 계산 (중앙 정렬을 위해)
+        let totalWidth = 0;
+        const groups: Array<{ tokens: number[]; isInput: boolean; text: string }> = [];
+        
+        // 연속된 같은 타입의 토큰들을 그룹화
+        let i_group = 0;
+        while (i_group < zeroLengthGroup.length) {
+          const startIdx = zeroLengthGroup[i_group];
+          const startType = tokens[startIdx].is_input;
+          const groupTokens: number[] = [startIdx];
+          
+          // 같은 타입의 연속된 토큰들 수집
+          let j_group = i_group + 1;
+          while (j_group < zeroLengthGroup.length && tokens[zeroLengthGroup[j_group]].is_input === startType) {
+            groupTokens.push(zeroLengthGroup[j_group]);
+            j_group++;
+          }
+          
+          // 그룹의 토큰들을 하나의 텍스트로 합치기
+          const combinedTokens = groupTokens.map(idx => tokens[idx].token).join(' ');
+          const textWidth = combinedTokens.length * charWidth + (groupTokens.length - 1) * spaceWidth;
+          
+          groups.push({
+            tokens: groupTokens,
+            isInput: startType,
+            text: combinedTokens,
+          });
+          
+          totalWidth += textWidth;
+          if (j_group < zeroLengthGroup.length) {
+            totalWidth += spaceWidth; // 그룹 사이 공백
+          }
+          
+          i_group = j_group;
+        }
+        
+        // 각 그룹을 중앙 정렬하여 배치
+        let currentX = -totalWidth / 2;
+        groups.forEach(group => {
+          const textWidth = group.text.length * charWidth + (group.tokens.length - 1) * spaceWidth;
+          const groupPosition = new THREE.Vector3(
+            centerPosition.x + currentX + textWidth / 2,
+            centerPosition.y,
+            centerPosition.z
+          );
+          
+          tokenData.push({
+            token: group.text,
+            position: [groupPosition.x, groupPosition.y, groupPosition.z],
+            isInput: group.isInput,
+          });
+          
+          currentX += textWidth + spaceWidth;
+        });
+        
+        currentStart = tv.destination;
+        i = j; 
       } else {
-        tokens.push(word);
+        // 길이가 0이 아닌 경우 화살표 중간에 텍스트 배치
+        const midPoint = new THREE.Vector3()
+          .addVectors(startVec, endVec)
+          .multiplyScalar(0.5);
+        
+        tokenData.push({
+          token: tv.token,
+          position: [midPoint.x, midPoint.y, midPoint.z],
+          isInput: tv.is_input,
+        });
+        
+        // 다음 벡터의 시작점은 현재 목적지
+        currentStart = tv.destination;
+        i++;
       }
-    });
-    return tokens;
-  }, [inputText]);
-
-  const outputTokens = useMemo(() => {
-    return outputText.split(/\s+/).filter((t) => t.length > 0);
-  }, [outputText]);
-
-  const vectorPairs = useMemo(() => {
-    const pairs: Array<{ start: [number, number, number]; end: [number, number, number] }> = [];
+    }
     
-    if (vectors.length > 0 && vectors[0].length >= 3) {
-      pairs.push({
-        start: [0, 0, 0],
-        end: [vectors[0][0], vectors[0][1], vectors[0][2]],
+    return tokenData;
+  };
+  
+  const tokenData = calculateTokenPositions();
+  
+  // 화살표 렌더링을 위한 시작점 추적
+  const getArrowData = () => {
+    const arrows: Array<{ start: [number, number, number]; end: [number, number, number]; color: string }> = [];
+    let currentStart: [number, number, number] = [0, 0, 0];
+    
+    for (const tv of tokens) {
+      arrows.push({
+        start: currentStart,
+        end: tv.destination,
+        color: tv.is_input ? '#52c41a' : '#ff4d4f',
       });
+      currentStart = tv.destination;
     }
     
-    for (let i = 1; i < vectors.length; i++) {
-      if (vectors[i].length >= 3 && vectors[i - 1].length >= 3) {
-        pairs.push({
-          start: [vectors[i - 1][0], vectors[i - 1][1], vectors[i - 1][2]],
-          end: [vectors[i][0], vectors[i][1], vectors[i][2]],
-        });
-      }
-    }
-    
-    return pairs;
-  }, [vectors]);
-
-  const tokenData = useMemo(() => {
-    const tokens: TokenData[] = [];
-    const allTokens = [...inputTokens, ...outputTokens];
-    
-    allTokens.forEach((token, idx) => {
-      if (idx < vectorPairs.length) {
-        const pair = vectorPairs[idx];
-        
-        const direction = new THREE.Vector3(
-          pair.end[0] - pair.start[0],
-          pair.end[1] - pair.start[1],
-          pair.end[2] - pair.start[2]
-        );
-        const length = direction.length();
-        
-        const position: [number, number, number] = length === 0
-          ? [pair.end[0], pair.end[1], pair.end[2]] 
-          : [
-              (pair.start[0] + pair.end[0]) / 2, 
-              (pair.start[1] + pair.end[1]) / 2,
-              (pair.start[2] + pair.end[2]) / 2,
-            ];
-        
-        tokens.push({
-          token,
-          position,
-          isInput: idx < inputTokens.length,
-        });
-      }
-    });
-
-    return tokens;
-  }, [inputTokens, outputTokens, vectorPairs]);
+    return arrows;
+  };
+  
+  const arrowData = getArrowData();
 
   return (
     <div style={{ width: '100%', height: '100vh', background: '#1a1a1a' }}>
@@ -192,12 +257,12 @@ const TokenVisualization: React.FC<TokenVisualizationProps> = ({
         <pointLight position={[10, 10, 10]} />
         <pointLight position={[-10, -10, -10]} intensity={0.3} />
 
-        {vectorPairs.map((pair, idx) => (
+        {arrowData.map((arrow, idx) => (
           <VectorArrow
             key={idx}
-            start={pair.start}
-            end={pair.end}
-            color={idx < inputTokens.length ? '#52c41a' : '#ff4d4f'}
+            start={arrow.start}
+            end={arrow.end}
+            color={arrow.color}
           />
         ))}
 
