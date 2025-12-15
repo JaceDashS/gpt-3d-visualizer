@@ -5,6 +5,15 @@ import * as THREE from 'three';
 
 import { TokenVector } from '../services/api';
 
+// 텍스트가 벡터 위로 올라가는 거리
+const TEXT_OFFSET_Y = 0.2;
+
+// 카메라 수직 회전 각도 제한 (도 단위)
+const CAMERA_MIN_POLAR_ANGLE_DEG = 10; // 위쪽 제한
+const CAMERA_MAX_POLAR_ANGLE_DEG = 170; // 아래쪽 제한
+const CAMERA_MIN_POLAR_ANGLE = CAMERA_MIN_POLAR_ANGLE_DEG * Math.PI / 180;
+const CAMERA_MAX_POLAR_ANGLE = CAMERA_MAX_POLAR_ANGLE_DEG * Math.PI / 180;
+
 interface TokenData {
   token: string;
   position: [number, number, number]; // 절대 위치
@@ -13,6 +22,13 @@ interface TokenData {
 
 interface TokenVisualizationProps {
   tokens: TokenVector[]; // 토큰과 벡터 정보가 함께 묶인 배열
+  // 모으기 애니메이션 관련 props
+  isAnimating?: boolean; // 현재 모으기 애니메이션 진행 중인지
+  animationProgress?: number; // 0~1 모으기 애니메이션 진행도
+  targetPosition?: [number, number, number]; // 토큰(텍스트)들이 모여드는 목표 위치
+  // 벡터 성장 애니메이션 관련 props
+  isGrowing?: boolean; // 현재 벡터 성장 중인지
+  growProgress?: number; // 0~1 벡터 성장 진행도
 }
 
 // 벡터 화살표 컴포넌트 (시작점-끝점 방식)
@@ -20,18 +36,23 @@ const VectorArrow: React.FC<{
   start: [number, number, number];
   end: [number, number, number];
   color?: string;
-}> = ({ start, end, color = '#4a90e2' }) => {
+  growProgress?: number; // 0~1, 1이면 완전히 그려짐
+}> = ({ start, end, color = '#4a90e2', growProgress = 1 }) => {
   const [arrow, setArrow] = useState<THREE.ArrowHelper | null>(null);
 
   useEffect(() => {
     const startVec = new THREE.Vector3(...start);
-    const endVec = new THREE.Vector3(...end);
+    const fullEndVec = new THREE.Vector3(...end);
+    
+    // arrow 성장 진행도에 따라 끝점 계산
+    const currentEndVec = new THREE.Vector3().lerpVectors(startVec, fullEndVec, growProgress);
     
     // 방향 벡터 계산
-    const direction = new THREE.Vector3().subVectors(endVec, startVec);
+    const direction = new THREE.Vector3().subVectors(currentEndVec, startVec);
     const length = direction.length();
     
-    if (length === 0) {
+    if (length === 0 || growProgress === 0) {
+      setArrow(null);
       return;
     }
     
@@ -59,7 +80,7 @@ const VectorArrow: React.FC<{
         }
       }
     };
-  }, [start, end, color]);
+  }, [start, end, color, growProgress]);
 
   if (!arrow) {
     return null;
@@ -74,10 +95,10 @@ const TokenPoint: React.FC<{
   position: [number, number, number];
   token: string;
   isInput: boolean;
-}> = ({ position, token, isInput }) => {
+  opacity?: number;
+}> = ({ position, token, isInput, opacity = 1 }) => {
   const groupRef = useRef<THREE.Group>(null);
   const { camera } = useThree();
-  const offset = 0.2; // 선 위로 텍스트가 올라가는 거리
 
   // 문자가 사용자가 보고있는 방향을 항상 보게 함 
   useFrame(() => {
@@ -88,12 +109,60 @@ const TokenPoint: React.FC<{
 
   return (
     <group ref={groupRef} position={position}>
-      <group position={[0, offset, 0]}>
+      <group position={[0, TEXT_OFFSET_Y, 0]}>
         <Text
           fontSize={0.15}
           color={isInput ? '#52c41a' : '#ff4d4f'}
           anchorX="center"
           anchorY="middle"
+          fillOpacity={opacity}
+        >
+          {token}
+        </Text>
+      </group>
+    </group>
+  );
+};
+
+// 텍스트가 모여드는 토큰 애니메이션 컴포넌트
+const GatheringToken: React.FC<{
+  startPosition: [number, number, number];
+  targetPosition: [number, number, number];
+  token: string;
+  isInput: boolean;
+  progress: number; // 0~1
+}> = ({ startPosition, targetPosition, token, isInput, progress }) => {
+  const groupRef = useRef<THREE.Group>(null);
+  const { camera } = useThree();
+  
+  // 현재 위치 계산 (lerp)
+  const currentPosition: [number, number, number] = [
+    startPosition[0] + (targetPosition[0] - startPosition[0]) * progress,
+    startPosition[1] + (targetPosition[1] - startPosition[1]) * progress,
+    startPosition[2] + (targetPosition[2] - startPosition[2]) * progress,
+  ];
+  
+  // 진행도에 따라 투명도 조절 (마지막에 사라짐)
+  const opacity = progress < 0.9 ? 0.7 : (1 - progress) * 7;
+  
+  // 진행도에 따라 크기 조절 (마지막에 작아짐)
+  const scale = progress < 0.8 ? 1 : 1 - (progress - 0.8) * 5;
+  
+  useFrame(() => {
+    if (groupRef.current) {
+      groupRef.current.lookAt(camera.position);
+    }
+  });
+
+  return (
+    <group ref={groupRef} position={currentPosition} scale={[scale, scale, scale]}>
+      <group position={[0, TEXT_OFFSET_Y, 0]}>
+        <Text
+          fontSize={0.12}
+          color={isInput ? '#52c41a' : '#ff4d4f'}
+          anchorX="center"
+          anchorY="middle"
+          fillOpacity={opacity}
         >
           {token}
         </Text>
@@ -105,6 +174,11 @@ const TokenPoint: React.FC<{
 //전체 시각화 (좌표나 화살표등을 랜더링해줌)
 const TokenVisualization: React.FC<TokenVisualizationProps> = ({
   tokens,
+  isAnimating = false,
+  animationProgress = 0,
+  targetPosition = [0, 0, 0],
+  isGrowing = false,
+  growProgress = 1,
 }) => {
   // 시작점을 클라이언트에서 추적하며 토큰 위치 계산
   const calculateTokenPositions = (): TokenData[] => {
@@ -209,7 +283,7 @@ const TokenVisualization: React.FC<TokenVisualizationProps> = ({
         currentStart = tv.destination;
         i = j; 
       } else {
-        // 길이가 0이 아닌 경우 화살표 중간에 텍스트 배치
+        // 길이가 0이 아닌 경우: 항상 화살표 중간에 텍스트 배치
         const midPoint = new THREE.Vector3()
           .addVectors(startVec, endVec)
           .multiplyScalar(0.5);
@@ -257,14 +331,19 @@ const TokenVisualization: React.FC<TokenVisualizationProps> = ({
         <pointLight position={[10, 10, 10]} />
         <pointLight position={[-10, -10, -10]} intensity={0.3} />
 
-        {arrowData.map((arrow, idx) => (
-          <VectorArrow
-            key={idx}
-            start={arrow.start}
-            end={arrow.end}
-            color={arrow.color}
-          />
-        ))}
+        {arrowData.map((arrow, idx) => {
+          // 성장 중인 마지막 벡터인지 확인
+          const isGrowingArrow = isGrowing && idx === arrowData.length - 1;
+          return (
+            <VectorArrow
+              key={idx}
+              start={arrow.start}
+              end={arrow.end}
+              color={arrow.color}
+              growProgress={isGrowingArrow ? growProgress : 1}
+            />
+          );
+        })}
 
         {tokenData.map((data, idx) => (
           <TokenPoint
@@ -272,6 +351,18 @@ const TokenVisualization: React.FC<TokenVisualizationProps> = ({
             position={data.position}
             token={data.token}
             isInput={data.isInput}
+          />
+        ))}
+
+        {/* 모여드는 토큰 애니메이션 */}
+        {isAnimating && tokenData.map((data, idx) => (
+          <GatheringToken
+            key={`gathering-${idx}`}
+            startPosition={data.position}
+            targetPosition={targetPosition}
+            token={data.token}
+            isInput={data.isInput}
+            progress={animationProgress}
           />
         ))}
 
@@ -285,9 +376,9 @@ const TokenVisualization: React.FC<TokenVisualizationProps> = ({
         <OrbitControls 
           enableDamping 
           dampingFactor={0.05}
-        //   각도를 제한하지 않으면 선을 중심으로 글자가 회전함
-          minPolarAngle={10 * Math.PI / 180} // 위쪽에서 10도 제한 (-80도)
-          maxPolarAngle={170 * Math.PI / 180} // 아래쪽에서 10도 제한 (80도)
+          // 각도를 제한하지 않으면 선을 중심으로 글자가 회전함
+          minPolarAngle={CAMERA_MIN_POLAR_ANGLE}
+          maxPolarAngle={CAMERA_MAX_POLAR_ANGLE}
         />
       </Canvas>
     </div>
