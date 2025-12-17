@@ -32,6 +32,7 @@ interface TokenVisualizationProps {
   tokens: TokenVector[];
   isAnimating?: boolean;
   animationProgress?: number;
+  gatherEffectProgress?: number;
   targetPosition?: Vector3Tuple;
   isGrowing?: boolean;
   growProgress?: number;
@@ -42,6 +43,7 @@ const TokenVisualization: React.FC<TokenVisualizationProps> = ({
   tokens,
   isAnimating = false,
   animationProgress = 0,
+  gatherEffectProgress = animationProgress,
   targetPosition = [0, 0, 0],
   isGrowing = false,
   growProgress = 1,
@@ -219,16 +221,18 @@ const TokenVisualization: React.FC<TokenVisualizationProps> = ({
         ))}
 
         {/* 모여드는 토큰 애니메이션 */}
-        {isAnimating && tokenData.map((data, idx) => (
-          <GatheringToken
-            key={`gathering-${idx}`}
-            startPosition={data.position}
-            targetPosition={targetPosition}
-            token={data.token}
-            isInput={data.isInput}
-            progress={animationProgress}
-          />
-        ))}
+        {isAnimating &&
+          tokenData.map((data, idx) => (
+            <GatheringToken
+              key={`gathering-${idx}`}
+              startPosition={data.position}
+              targetPosition={targetPosition}
+              token={data.token}
+              isInput={data.isInput}
+              moveProgress={animationProgress}
+              effectProgress={gatherEffectProgress}
+            />
+          ))}
 
         {/* 원점 표시 구 */}
         <mesh position={[0, 0, 0]}>
