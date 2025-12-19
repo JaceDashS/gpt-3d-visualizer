@@ -22,3 +22,43 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* FloatingNav 스타일 - 전역 CSS 클래스 사용 */
+.floating-nav {
+  position: fixed;
+  right: 20px;
+  bottom: 8px;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  color: var(--color-text-light-gray);
+}
+
+.floating-nav a,
+.floating-nav button {
+  color: inherit;
+  text-decoration: none;
+  border: none;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.floating-nav a:hover,
+.floating-nav button:hover {
+  color: var(--color-text-hover);
+  text-decoration: underline;
+}
+
+.floating-nav a.active {
+  color: var(--color-text-hover);
+  text-decoration: underline;
+}
+
+.floating-nav .separator {
+  color: var(--color-text-separator);
+}

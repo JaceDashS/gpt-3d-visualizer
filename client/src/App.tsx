@@ -3,7 +3,7 @@ import './App.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import HowItWorksPage from './pages/HowItWorksPage';
-import FloatingNav from './components/layout/FloatingNav';
+import FloatingNav from './components/navigation/FloatingNav';
 import AboutOverlay from './components/about/AboutOverlay';
 import FeedbackOverlay from './components/feedback/FeedbackOverlay';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -34,13 +34,13 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/how-it-works" element={<HowItWorksPage />} />
       </Routes>
-        <FloatingNav 
-          onToggleAbout={handleToggleAbout} 
-          onToggleFeedback={handleToggleFeedback}
-          onNavigate={handleNavigate} 
-        />
+      <FloatingNav 
+        onToggleAbout={handleToggleAbout} 
+        onToggleFeedback={handleToggleFeedback}
+        onNavigate={handleNavigate} 
+      />
       <AboutOverlay isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
-        <FeedbackOverlay isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
+      <FeedbackOverlay isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
     </BrowserRouter>
     </LanguageProvider>
   );
