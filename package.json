@@ -13,7 +13,8 @@
     "install:all": "npm install && npm run server:install",
     "dev": "concurrently \"npm run client:start\" \"npm run server:dev\"",
     "dev:client": "npm run client:start",
-    "dev:server": "npm run server:dev"
+    "dev:server": "npm run server:dev",
+    "spell-check": "codespell --skip='*.pyc,venv/*,node_modules/*,__pycache__/*,package-lock.json'"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
