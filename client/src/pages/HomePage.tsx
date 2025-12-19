@@ -1,13 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import TokenVisualization from './TokenVisualization';
-import { InputPanel, AnimationControlBar, LoadingIndicator } from './controls';
+import TokenVisualization from '../components/TokenVisualization';
+import { InputPanel, AnimationControlBar, LoadingIndicator } from '../components/controls';
 import { useVisualizationApi, useAnimationTimer } from '../hooks';
 import { TokenVector } from '../services/api';
 import { calculateMidpoint, Vector3Tuple } from '../utils/vectorMath';
-import styles from './VisualizationContainer.module.css';
+import styles from './HomePage.module.css';
 
 // 전체 시각화를 관리하는 컨테이너 컴포넌트
-const VisualizationContainer: React.FC = () => {
+const HomePage: React.FC = () => {
   // 사용자 입력 상태
   const [inputText, setInputText] = useState<string>('');
   const [submittedText, setSubmittedText] = useState<string>('');
@@ -22,14 +22,14 @@ const VisualizationContainer: React.FC = () => {
     fetchVisualization,
   } = useVisualizationApi();
 
-  // 애니메이션 훅
+  // 애니메이션 훅. 텍스트가 목적지로 모이고 화살표가 성장하는 단계가 있음
   const {
     animationStep,
     isPlaying,
     isGathering,
-    gatherProgress,
+    gatherProgress, // 모으기 진행도 0~1
     isGrowing,
-    growProgress,
+    growProgress, // 성장 진행도 0~1
     animationSpeed,
     setAnimationStep,
     setIsPlaying,
@@ -69,12 +69,15 @@ const VisualizationContainer: React.FC = () => {
 
   // 다음 출력 토큰의 목표 위치 계산 (벡터 중간점)
   const nextTargetPosition: Vector3Tuple = useMemo(() => {
+    // api호출결과가 없거나 애니메이션이 끝까지 간경우
     if (!visualizationData || animationStep >= outputTokens.length) {
       return [0, 0, 0];
     }
 
     // animationStep번째 출력 토큰
     const nextOutputToken = outputTokens[animationStep];
+
+    // 혹시 범위 밖인 경우를 위한 방어
     if (!nextOutputToken) return [0, 0, 0];
 
     // 시작점 계산: 원점 or 이전토큰 목적지
@@ -185,4 +188,5 @@ const VisualizationContainer: React.FC = () => {
   );
 };
 
-export default VisualizationContainer;
+export default HomePage;
+

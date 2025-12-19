@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './App.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import VisualizationContainer from './components/VisualizationContainer';
+import HomePage from './pages/HomePage';
 import HowItWorksPage from './pages/HowItWorksPage';
 import FloatingNav from './components/layout/FloatingNav';
 import AboutOverlay from './components/about/AboutOverlay';
@@ -31,7 +31,7 @@ function App() {
     <LanguageProvider>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<VisualizationContainer />} />
+        <Route path="/" element={<HomePage />} />
         <Route path="/how-it-works" element={<HowItWorksPage />} />
       </Routes>
         <FloatingNav 
