@@ -1,3 +1,14 @@
+---
+title: GPT Visualizer Server
+emoji: 🤖
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_port: 7860
+pinned: false
+---
+<!-- This block provides metadata for project automation tools (e.g., GitHub Actions workflows) -->
+
 # GPT Token Embedding Visualizer
 
 A 3D visualization tool for GPT token embeddings. This application visualizes how tokens are processed and transformed through vector space using PCA (Principal Component Analysis), providing an intuitive understanding of how language models work.
