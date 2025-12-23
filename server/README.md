@@ -4,6 +4,7 @@ emoji: 🤖
 colorFrom: blue
 colorTo: purple
 sdk: docker
+sdk_version: "4.0.0"
 app_port: 7860
 pinned: false
 ---
@@ -69,3 +70,4 @@ The server automatically configures:
 The model is automatically downloaded from Hugging Face Hub on first run:
 - Repository: `bartowski/Llama-3.2-1B-Instruct-GGUF`
 - Model File: `Llama-3.2-1B-Instruct-Q4_K_M.gguf`
+

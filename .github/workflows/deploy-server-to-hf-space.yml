@@ -18,6 +18,8 @@ jobs:
         run: |
           mkdir -p out
           rsync -av --delete server/ out/
+          # Copy server README.md to root for Hugging Face Spaces
+          cp server/README.md out/README.md
 
       - name: Push to Hugging Face Space
         env:
