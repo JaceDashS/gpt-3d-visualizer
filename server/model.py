@@ -1,7 +1,24 @@
 import os
 from pathlib import Path
-from llama_cpp import Llama
 from huggingface_hub import hf_hub_download
+
+# llama_cpp는 런타임에 사용되므로 lazy import 사용
+_llama_cpp_module = None
+
+def _import_llama_cpp():
+    """llama_cpp 모듈을 lazy import"""
+    global _llama_cpp_module
+    if _llama_cpp_module is None:
+        try:
+            import llama_cpp
+            _llama_cpp_module = llama_cpp
+        except ImportError:
+            raise ImportError(
+                "llama_cpp module not found. "
+                "Please ensure llama-cpp-python is installed. "
+                "It should be installed from requirements.txt."
+            )
+    return _llama_cpp_module.Llama
 
 # Hugging Face 모델 설정
 HF_REPO_ID = "bartowski/Llama-3.2-1B-Instruct-GGUF"
@@ -39,9 +56,21 @@ def load_gguf_model():
     """Load GGUF model"""
     print("Loading GGUF model...")
     
-    # 모델 파일이 없으면 다운로드
+    # llama_cpp import (lazy)
+    Llama = _import_llama_cpp()
+    
+    # 모델 파일 존재 확인 (빌드 타임에 다운로드되어 있어야 함)
     if not GGUF_PATH.exists():
-        download_model_from_hf()
+        # 런타임 다운로드는 환경 변수로 제어
+        if os.getenv("ALLOW_RUNTIME_DOWNLOAD", "false").lower() == "true":
+            print("Warning: Downloading model at runtime (should be downloaded at build time)")
+            download_model_from_hf()
+        else:
+            raise FileNotFoundError(
+                f"Model file not found: {GGUF_PATH}\n"
+                "Model should be downloaded at build time. "
+                "If you need runtime download, set ALLOW_RUNTIME_DOWNLOAD=true"
+            )
     else:
         print(f"Using existing model: {GGUF_PATH}")
     
@@ -50,8 +79,9 @@ def load_gguf_model():
         raise FileNotFoundError(f"Model file not found: {GGUF_PATH}")
     
     print(f"Loading model from: {GGUF_PATH}")
-    # 스레드 수 설정: 환경 변수가 있으면 사용, 없으면 CPU 코어 수 또는 기본값 4
-    n_threads = int(os.getenv("LLAMA_N_THREADS", os.cpu_count() or 4))
+    # 스레드 수 설정: 환경 변수가 있으면 사용, 없으면 CPU 코어 수 또는 기본값 2
+    # 허깅페이스가 2vcpu가 프리티어라서 아마 2로하는게 제일 좋을거임
+    n_threads = int(os.getenv("LLAMA_N_THREADS", os.cpu_count() or 2))
     print(f"Using {n_threads} threads for model inference")
     llama = Llama(
         model_path=str(GGUF_PATH),
@@ -103,11 +133,5 @@ def ensure_model_loaded():
         traceback.print_exc()
         return False
 
-# Try to load model at startup (non-blocking)
-try:
-    llama = load_gguf_model()
-    print("Model loaded successfully at startup")
-except Exception as e:
-    print(f"Model load failed at startup: {e}")
-    print("Model will be loaded on first request")
-    llama = None
+# 모듈 레벨에서 자동 로드 제거 - startup_event나 첫 요청 시 로드
+# 이렇게 하면 빌드 타임에 download_model_from_hf()만 실행하고 llama_cpp는 import하지 않음

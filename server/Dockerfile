@@ -17,16 +17,21 @@ RUN apt-get purge -y gcc g++ build-essential cmake \
     && apt-get autoremove -y \
     && apt-get clean
 
-# 서버 코드 복사
-COPY main.py .
+# 모델 디렉토리 생성
+RUN mkdir -p models
+
+# 모델 다운로드를 위해 model.py 먼저 복사 (다운로드 함수 사용)
 COPY model.py .
+
+# 빌드 타임에 모델 다운로드
+RUN python -c "from model import download_model_from_hf; download_model_from_hf()"
+
+# 나머지 서버 코드 복사
+COPY main.py .
 COPY routes.py .
 COPY utils.py .
 COPY schemas.py .
 COPY config.py .
-
-# 모델 디렉토리 생성 (런타임에 다운로드됨)
-RUN mkdir -p models
 
 # 도커 포트 설정
 EXPOSE 7860

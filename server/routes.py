@@ -1,5 +1,4 @@
 from fastapi import HTTPException
-from model import llama
 from schemas import VisualizeRequest, VisualizeResponse, TokenVector
 from utils import generate_response, format_vector, apply_pca_and_normalize
 
@@ -8,7 +7,7 @@ async def visualize(request: VisualizeRequest):
     """Visualize endpoint - 모델로 응답 생성 후 임베딩 추출 및 PCA로 3차원 축소"""
     
     # 모델이 로드되어 있는지 확인하고, 없으면 로드 시도
-    from model import ensure_model_loaded
+    from model import ensure_model_loaded, llama
     if not ensure_model_loaded():
         raise HTTPException(status_code=503, detail="모델을 로드할 수 없습니다. 잠시 후 다시 시도해주세요.")
     
