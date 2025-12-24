@@ -20,7 +20,10 @@ RUN apt-get purge -y gcc g++ build-essential cmake \
 # 모델 디렉토리 생성
 RUN mkdir -p models
 
-# 모델 다운로드를 위해 model.py 먼저 복사 (다운로드 함수 사용)
+# config.py를 먼저 복사 (model.py가 config를 import하므로 필요)
+COPY config.py .
+
+# 모델 다운로드를 위해 model.py 복사 (다운로드 함수 사용)
 COPY model.py .
 
 # 빌드 타임에 모델 다운로드
@@ -35,7 +38,6 @@ COPY main.py .
 COPY routes.py .
 COPY utils.py .
 COPY schemas.py .
-COPY config.py .
 
 # 도커 포트 설정
 EXPOSE 7860
@@ -45,5 +47,5 @@ ENV SERVER_PORT=7860
 # 모델 스레드 설정 (도커 환경에서는 1스레드 사용)
 ENV LLAMA_N_THREADS=1
 
-# Python 기본 HTTP 서버 사용
-CMD ["python", "main.py"]
+# Python 기본 HTTP 서버 사용 (unbuffered 모드로 즉시 출력)
+CMD ["python", "-u", "main.py"]
