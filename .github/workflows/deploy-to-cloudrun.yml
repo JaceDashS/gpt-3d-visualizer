@@ -1,0 +1,86 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'server/**'
+      - '.github/workflows/deploy-to-cloudrun.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: precise-window-482523-b7
+  PROJECT_NUM: 539823144644
+  REGION: us-central1
+
+  # Cloud Run service name
+  SERVICE: gpt-visualizer-server
+
+  # Artifact Registry repo & image name
+  ARTIFACT_REPO: gpt-visualizer-server
+  IMAGE_NAME: gpt-visualizer-server
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 모델 다운로드 (빌드 타임에 이미지에 포함시키기 위해)
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies for model download
+        run: |
+          pip install --no-cache-dir huggingface-hub
+
+      - name: Download model
+        working-directory: server
+        run: |
+          python download_model.py
+
+      # WIF (no JSON key). Secret: WIF_PROVIDER
+      - name: Google Auth (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: gha-gpt-visualizer-server-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker "${{ env.REGION }}-docker.pkg.dev" --quiet
+
+      - name: Build image
+        working-directory: server
+        run: |
+          docker build \
+            -t "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" \
+            .
+
+      - name: Push image
+        run: |
+          docker push "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          flags: '--allow-unauthenticated --port 8080 --health-check-path=/health'
+
+      - name: Show Output
+        run: echo "${{ steps.deploy.outputs.url }}"
+

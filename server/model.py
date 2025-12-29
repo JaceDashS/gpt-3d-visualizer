@@ -168,6 +168,14 @@ def load_gguf_model():
     
     # chat_llama_q4km.py의 성공적인 설정을 정확히 복사 (embedding=True 추가)
     try:
+        # #region agent log
+        import sys
+        import io
+        old_stderr = sys.stderr
+        stderr_capture = io.StringIO()
+        sys.stderr = stderr_capture
+        debug_log("model.py:constructor", "BEFORE Llama() CONSTRUCTOR", {"model_path": str(GGUF_PATH), "n_threads": n_threads, "embedding": True}, "H2")
+        # #endregion
         llama = Llama(
             model_path=str(GGUF_PATH),
             n_ctx=4096,
@@ -176,10 +184,18 @@ def load_gguf_model():
             chat_format="llama-3",
             embedding=True,    # Enable embedding extraction (필수)
         )
+        sys.stderr = old_stderr
+        stderr_output = stderr_capture.getvalue()
+        if stderr_output:
+            # #region agent log
+            debug_log("model.py:constructor", "STDERR DURING CONSTRUCTOR", {"stderr": stderr_output}, "H2")
+            # #endregion
+            print(f"[STDERR] {stderr_output}")
         # #region agent log
         debug_log("model.py:88", "AFTER Llama() CONSTRUCTOR SUCCESS", {"llama_object": str(type(llama))}, "C")
         # #endregion
     except Exception as e:
+        sys.stderr = old_stderr
         # #region agent log
         debug_log("model.py:90", "Llama() CONSTRUCTOR FAILED", {"error_type": type(e).__name__, "error_message": str(e), "error_repr": repr(e)}, "C")
         # #endregion

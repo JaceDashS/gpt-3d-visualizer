@@ -23,8 +23,43 @@ def visualize_sync(request: VisualizeRequest) -> VisualizeResponse:
             print(f"[VISUALIZE] Response generated: {generated_response[:50]}...")
             
             print("[VISUALIZE] Extracting input embeddings...")
+            # #region agent log
+            import json
+            import time
+            from pathlib import Path
+            log_path = Path(__file__).resolve().parent.parent / ".cursor" / "debug.log"
+            log_path.parent.mkdir(exist_ok=True)
+            def debug_log(location, message, data, hypothesis_id):
+                try:
+                    with open(log_path, "a", encoding="utf-8") as f:
+                        f.write(json.dumps({"sessionId": "debug-session", "runId": "run1", "hypothesisId": hypothesis_id, "location": location, "message": message, "data": data, "timestamp": int(time.time() * 1000)}) + "\n")
+                        f.flush()
+                except: pass
+            debug_log("routes.py:embed_input", "BEFORE llama.embed(input)", {"input_text": request.input_text[:50]}, "H1")
+            # #endregion
             # Extract token embeddings from input text
-            input_embeddings = llama.embed(request.input_text)
+            # Note: llama.embed() returns per-token embeddings but may show warnings
+            # The warning "init: embeddings required but some input tokens were not marked as outputs -> overriding"
+            # is expected and can be safely ignored - it's just llama-cpp-python's internal handling
+            import sys
+            import io
+            old_stderr = sys.stderr
+            stderr_capture = io.StringIO()
+            sys.stderr = stderr_capture
+            try:
+                input_embeddings = llama.embed(request.input_text)
+            finally:
+                sys.stderr = old_stderr
+                stderr_output = stderr_capture.getvalue()
+                # Filter out the expected warning message
+                if stderr_output and "init: embeddings required but some input tokens were not marked as outputs -> overriding" not in stderr_output:
+                    # #region agent log
+                    debug_log("routes.py:embed_input", "STDERR OUTPUT", {"stderr": stderr_output}, "H1")
+                    # #endregion
+                    print(f"[STDERR] {stderr_output}")
+            # #region agent log
+            debug_log("routes.py:embed_input", "AFTER llama.embed(input)", {"embeddings_count": len(input_embeddings) if input_embeddings else 0}, "H1")
+            # #endregion
             input_tokens = llama.tokenize(request.input_text.encode('utf-8'))
             input_token_strs = [llama.detokenize([t]).decode('utf-8', errors='replace') for t in input_tokens]
             print(f"[VISUALIZE] Input tokens: {len(input_token_strs)}")
@@ -36,8 +71,30 @@ def visualize_sync(request: VisualizeRequest) -> VisualizeResponse:
             print(f"[VISUALIZE] Filtered input tokens: {len(input_token_strs)}")
             
             print("[VISUALIZE] Extracting output embeddings...")
+            # #region agent log
+            debug_log("routes.py:embed_output", "BEFORE llama.embed(output)", {"output_text": generated_response[:50]}, "H1")
+            # #endregion
             # Extract token embeddings from generated response
-            output_embeddings = llama.embed(generated_response)
+            # Note: llama.embed() returns per-token embeddings but may show warnings
+            # The warning "init: embeddings required but some input tokens were not marked as outputs -> overriding"
+            # is expected and can be safely ignored - it's just llama-cpp-python's internal handling
+            old_stderr = sys.stderr
+            stderr_capture = io.StringIO()
+            sys.stderr = stderr_capture
+            try:
+                output_embeddings = llama.embed(generated_response)
+            finally:
+                sys.stderr = old_stderr
+                stderr_output = stderr_capture.getvalue()
+                # Filter out the expected warning message
+                if stderr_output and "init: embeddings required but some input tokens were not marked as outputs -> overriding" not in stderr_output:
+                    # #region agent log
+                    debug_log("routes.py:embed_output", "STDERR OUTPUT", {"stderr": stderr_output}, "H1")
+                    # #endregion
+                    print(f"[STDERR] {stderr_output}")
+            # #region agent log
+            debug_log("routes.py:embed_output", "AFTER llama.embed(output)", {"embeddings_count": len(output_embeddings) if output_embeddings else 0}, "H1")
+            # #endregion
             output_tokens = llama.tokenize(generated_response.encode('utf-8'))
             output_token_strs = [llama.detokenize([t]).decode('utf-8', errors='replace') for t in output_tokens]
             print(f"[VISUALIZE] Output tokens: {len(output_token_strs)}")

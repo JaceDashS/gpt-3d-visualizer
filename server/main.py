@@ -47,12 +47,41 @@ class VisualizeHandler(BaseHTTPRequestHandler):
     
     def _handle_health(self):
         """Handle health check endpoint"""
-        from model import llama
+        from model import llama, GGUF_PATH
+        from pathlib import Path
+        import os
+        
+        # 모델 파일 정보 확인
+        model_exists = GGUF_PATH.exists()
+        model_file_size = None
+        model_built_at = None
+        model_built_at_build_time = False
+        
+        if model_exists:
+            model_file_size = GGUF_PATH.stat().st_size / (1024 * 1024)  # MB
+            
+            # 빌드 타임 마커 파일 확인
+            build_marker = GGUF_PATH.parent / ".model_built_at"
+            if build_marker.exists():
+                model_built_at_build_time = True
+                try:
+                    with open(build_marker, 'r') as f:
+                        model_built_at = f.read().strip()
+                except Exception:
+                    pass
+        
         response = {
             "status": "healthy",
             "service": SERVICE_NAME,
             "version": API_VERSION,
-            "model_loaded": llama is not None
+            "model_loaded": llama is not None,
+            "model": {
+                "exists": model_exists,
+                "built_at_build_time": model_built_at_build_time,
+                "built_at": model_built_at,
+                "file_size_mb": round(model_file_size, 2) if model_file_size else None,
+                "path": str(GGUF_PATH)
+            }
         }
         self._send_json_response(200, response)
     

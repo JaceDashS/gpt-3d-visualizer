@@ -2,7 +2,8 @@ import os
 
 # 서버 설정
 SERVER_HOST = os.getenv("SERVER_HOST", "0.0.0.0") #모든 네트워크 인터페이스에서 수신 가능
-SERVER_PORT = int(os.getenv("SERVER_PORT", "7860"))
+# Cloud Run은 PORT 환경 변수를 자동으로 설정하므로 우선 확인
+SERVER_PORT = int(os.getenv("PORT") or os.getenv("SERVER_PORT", "8080"))
 
 # CORS 설정
 CORS_ORIGINS = [
