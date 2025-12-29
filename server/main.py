@@ -31,7 +31,7 @@ class VisualizeHandler(BaseHTTPRequestHandler):
         """Handle GET requests"""
         parsed_path = urlparse(self.path)
         
-        if parsed_path.path == '/health':
+        if parsed_path.path == '/health' or parsed_path.path == '/':
             self._handle_health()
         else:
             self._send_error(404, "Not Found")

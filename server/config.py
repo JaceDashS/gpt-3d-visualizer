@@ -12,7 +12,7 @@ CORS_ORIGINS = [
 ]
 
 # API 설정
-API_VERSION = "1.0.0"
+API_VERSION = "1.0.1"
 SERVICE_NAME = "GPT Visualizer"
 
 # 모델 스레드 설정
