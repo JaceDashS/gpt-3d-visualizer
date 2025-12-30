@@ -27,6 +27,7 @@ export const useVisualizationApi = (): UseVisualizationApiReturn => {
 
       try {
         const result = await visualizeApi.getTokenVectors(submittedText);
+        console.log('[Visualization API] response:', result);
         setVisualizationData({
           tokens: result.tokens,
         });
@@ -46,8 +47,12 @@ export const useVisualizationApi = (): UseVisualizationApiReturn => {
   const outputTokens = visualizationData?.tokens.filter(t => !t.is_input) || [];
 
   const fetchVisualization = useCallback((text: string) => {
-    if (text.trim()) {
-      setSubmittedText(text.trim());
+    const trimmed = text.trim();
+    if (trimmed) {
+      // 에러만 먼저 초기화 (이전 에러를 즉시 지우기 위해)
+      setError(null);
+      setSubmittedText(trimmed);
+      // setIsLoading은 useEffect에서 자동으로 처리됨
     }
   }, []);
 
