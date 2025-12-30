@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import TokenVisualization from '../components/TokenVisualization';
 import { TokenVector } from '../services/api';
 import { calculateMidpoint, Vector3Tuple } from '../utils/vectorMath';
+import { useAnimationTimer } from '../hooks';
 import styles from './HowItWorksPage.module.css';
 import { howItWorksData } from '../locales/howItWorks';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -114,43 +115,51 @@ export const getSteps = (language: Language): StepContent[] => {
 
 const REPLAY_LABEL = 'Replay step';
 
-type StepId = 0 | 1 | 2 | 3 | 4;
+type StepId = 0 | 1 | 2 | 3 | 4 | 5;
 
 // How it works 데모에서 사용할 고정 mock 벡터들 (터미널에서 [-2, 2] 범위 난수로 생성)
 // 이후에  [-1,1]로 수정할것임
 // 같은 토큰은 항상 같은 위치를 가지도록 함
-const TOKEN_VECTORS: Record<string, Vector3Tuple> = {
-  Explain: [-1.982, -1.455, -1.33],
-  GPT: [1.053, -0.131, -0.032],
-  in: [-1.269, -1.791, 1.292],
-  simple: [0.22, -0.297, 0.951],
-  terms: [-1.855, 0.99, -0.674],
-  generates: [1.028, -1.416, -1.684],
-  the: [-1.004, -0.483, -1.876],
-  next: [-1.004, -0.483, -1.876], // 응답의 'next'는 바로 앞 토큰('the')와 같은 위치로 설정 → 길이 0 벡터 예시
-  token: [-0.479, 0.975, 0.747],
-  '.': [0.882, 1.382, 1.145],
-};
+const USER_TOKENS: TokenVector[] = [
+  { token: 'Ex', destination: [0.5857302708020367, -0.17127111196926315, 0.6450533411395873], is_input: true },
+  { token: 'plain', destination: [0.04237512438311963, -1, -0.1178833352529004], is_input: true },
+  { token: ' G', destination: [1, -0.008739334137217614, 1], is_input: true },
+  { token: 'PT', destination: [0.6665919750067879, 1, -1], is_input: true },
+  { token: ' in', destination: [-0.017225745428265826, -0.8717108739418001, -0.4430874295318551], is_input: true },
+  { token: ' simple', destination: [-0.0926379053450167, -0.8890219558250391, -0.11963766783925567], is_input: true },
+  { token: ' terms', destination: [-0.03569214256438602, -0.7780485219856715, -0.15024645554376526], is_input: true },
+  { token: '.', destination: [0.038395651440974454, -0.46548892711627265, -0.6504794715862583], is_input: true },
+];
+
+const ASSISTANT_TOKENS: TokenVector[] = [
+  { token: 'G', destination: [0.9801735914591101, 0.01117484987736872, 0.9926450061791408], is_input: false },
+  { token: 'PT', destination: [0.8442876748482859, 0.993738869803318, -0.9699582986625429], is_input: false },
+  { token: ' is', destination: [-0.23435287621675094, -0.729011516923119, -0.2390387346996773], is_input: false },
+  { token: ' a', destination: [-0.45800081077089994, -0.5241113246876802, -0.32277384957820154], is_input: false },
+  { token: ' large', destination: [-0.695850375126017, 0.030017176578402305, 0.1194130545359493], is_input: false },
+  { token: ' language', destination: [-0.793213959638941, 0.5766287225329205, 0.24142875881527504], is_input: false },
+  { token: ' model', destination: [-1, 0.641368070793618, 0.2783895814813502], is_input: false },
+  { token: ' AI', destination: [-0.9592712427210238, 0.7823042480271183, 0.416999980194547], is_input: false },
+  { token: ' system', destination: [-0.6977809560336253, -0.04606662962281638, 0.2510720732122893], is_input: false },
+  { token: '.', destination: [-0.2116552545798317, -0.2480484857141918, -0.4474033676024035], is_input: false },
+];
 
 const HowItWorksPage: React.FC = () => {
   const [step, setStep] = useState<StepId>(0);
   const [replayKey, setReplayKey] = useState(0);
   const { language, setLanguage } = useLanguage();
-
-  const demoInputText = 'Explain GPT in simple terms';
-
   const [gatherMoveProgress, setGatherMoveProgress] = useState(0);
   const [gatherEffectProgress, setGatherEffectProgress] = useState(0);
   const [growProgress, setGrowProgress] = useState(0);
   const [showFirstOutputToken, setShowFirstOutputToken] = useState(false);
-  const [showZeroLengthToken, setShowZeroLengthToken] = useState(false);
+  const [showSecondOutputToken, setShowSecondOutputToken] = useState(false);
 
   const uiText = useMemo(() => getUiText(language), [language]);
   const steps = useMemo(() => getSteps(language), [language]);
 
   const clampStep = (value: number): StepId => {
     if (value <= 0) return 0;
-    if (value >= 4) return 4;
+    if (value >= 5) return 5;
     return value as StepId;
   };
 
@@ -160,89 +169,167 @@ const HowItWorksPage: React.FC = () => {
 
   //토큰 리스트 생성
   const { userTokens, assistantTokens, allTokens } = useMemo(() => {
-    const rawUserWords = demoInputText.trim() ? demoInputText.trim().split(/\s+/) : ['(empty)'];
-    const hasPeriodAtEnd = rawUserWords[rawUserWords.length - 1] === '.';
-    const baseUserWords = hasPeriodAtEnd ? rawUserWords.slice(0, rawUserWords.length - 1) : rawUserWords;
-    const limitedBase = baseUserWords.slice(0, 5);
-    const userWords = [...limitedBase, '.'];
-
-    const assistantBaseWords = ['GPT', 'generates', 'the', 'next', 'token'];
-    const assistantWords = [...assistantBaseWords, '.'];
-
-    const user = userWords.map((w) => {
-      const dest = TOKEN_VECTORS[w] ?? [0, 0, 0];
-      return {
-        token: w,
-        destination: dest,
-        is_input: true,
-      };
-    });
-
-    const assistant = assistantWords.map((w) => {
-      const dest = TOKEN_VECTORS[w] ?? [0, 0, 0];
-      return {
-        token: w,
-        destination: dest,
-        is_input: false,
-      };
-    });
-
     return {
-      userTokens: user,
-      assistantTokens: assistant,
-      allTokens: [...user, ...assistant],
+      userTokens: USER_TOKENS,
+      assistantTokens: ASSISTANT_TOKENS,
+      allTokens: [...USER_TOKENS, ...ASSISTANT_TOKENS],
     };
-  }, [demoInputText]);
+  }, []);
+
+  // Step5에서만 사용할 HomePage와 동일한 애니메이션 훅 (첫 번째~두 번째 아웃풋 토큰)
+  const step5Animation = useAnimationTimer(
+    2, // 첫 번째와 두 번째 아웃풋 토큰만 (maxSteps = 2)
+    assistantTokens.length >= 2 // 항상 데이터가 있다고 가정
+  );
+
+  // Step6에서 사용할 HomePage와 동일한 애니메이션 훅 (세 번째~마지막 아웃풋 토큰)
+  const step6MaxSteps = Math.max(0, assistantTokens.length - 2); // 3번부터 마지막까지
+  const step6Animation = useAnimationTimer(
+    step6MaxSteps,
+    assistantTokens.length >= 3 // 세 번째 토큰부터 있으면 데이터가 있다고 가정
+  );
 
   // 스텝에 따른 시각화 토큰 / 애니메이션 모드 결정
   const visibleTokens: TokenVector[] = useMemo(() => {
-    const zeroVectorIndex = assistantTokens.findIndex((t) => t.token === 'next');
-    const zeroVectorToken = zeroVectorIndex >= 0 ? assistantTokens[zeroVectorIndex] : undefined;
-    const assistantBeforeZero = zeroVectorIndex >= 0 ? assistantTokens.slice(0, zeroVectorIndex) : assistantTokens;
-
-    // 스탭1과 2는 인풋토큰만 보임
+    // Step1~2: input tokens only
     if (step === 0 || step === 1) return userTokens;
 
-    // 스탭3은 shrink하고 벡터 성장
+    // Step3: show first output token
     if (step === 2) {
       return showFirstOutputToken ? [...userTokens, assistantTokens[0]] : userTokens;
     }
 
-    // 스탭4는 길이 0 벡터
+    // Step4: animate second output token
     if (step === 3) {
-      const assistantForZeroStep =
-        showZeroLengthToken && zeroVectorToken
-          ? [...assistantBeforeZero, zeroVectorToken]
-          : assistantBeforeZero;
-      return [...userTokens, ...assistantForZeroStep];
+      if (!assistantTokens[0]) return userTokens;
+      return showSecondOutputToken
+        ? [...userTokens, assistantTokens[0], assistantTokens[1]]
+        : [...userTokens, assistantTokens[0]];
     }
 
-    // 스탭5는 다보임
-    return allTokens;
-  }, [step, userTokens, assistantTokens, allTokens, showFirstOutputToken, showZeroLengthToken]);
+    // Step5: HomePage와 동일한 로직으로 첫 번째~두 번째 아웃풋 토큰 재생
+    if (step === 4) {
+      if (!assistantTokens[0] || assistantTokens.length < 2) return userTokens;
+      
+      const baseTokens = [...userTokens, ...assistantTokens.slice(0, step5Animation.animationStep)];
+      
+      // 성장 중일 때는 성장 중인 토큰도 포함
+      if (step5Animation.isGrowing && step5Animation.animationStep < 2) {
+        baseTokens.push(assistantTokens[step5Animation.animationStep]);
+      }
+      
+      return baseTokens;
+    }
 
-  // Step2: move only / Step3: shrink (then grow) / Step4: 길이 0 벡터 예시용 모으기 애니메이션
-  const isAnimating = step === 1 || step === 2 || step === 3;
-  const isGrowing = (step === 2 && showFirstOutputToken) || (step === 3 && showZeroLengthToken);
+    // Step6: HomePage와 동일한 로직으로 세 번째~마지막 아웃풋 토큰 재생
+    if (step === 5) {
+      if (assistantTokens.length < 3) return allTokens;
+      
+      // 첫 두 토큰은 항상 표시
+      const firstTwoTokens = assistantTokens.slice(0, 2);
+      // 세 번째부터는 animationStep에 따라 표시 (animationStep은 0부터 시작하므로 +2)
+      const remainingTokens = assistantTokens.slice(2, 2 + step6Animation.animationStep);
+      
+      const baseTokens = [...userTokens, ...firstTwoTokens, ...remainingTokens];
+      
+      // 성장 중일 때는 성장 중인 토큰도 포함
+      if (step6Animation.isGrowing && step6Animation.animationStep < step6MaxSteps) {
+        const growingTokenIndex = 2 + step6Animation.animationStep;
+        if (assistantTokens[growingTokenIndex]) {
+          baseTokens.push(assistantTokens[growingTokenIndex]);
+        }
+      }
+      
+      return baseTokens;
+    }
+
+    // 기본: show all tokens
+    return allTokens;
+  }, [step, userTokens, assistantTokens, allTokens, showFirstOutputToken, showSecondOutputToken, step5Animation, step6Animation, step6MaxSteps]);
+
+  // Step2: move only / Step3: shrink (then grow) / Step5, Step6: HomePage와 동일한 로직
+  const isAnimating = step === 1 || step === 2 || step === 3 || 
+    (step === 4 && step5Animation.isGathering) || 
+    (step === 5 && step6Animation.isGathering);
+  const isGrowing =
+    (step === 2 && showFirstOutputToken) ||
+    (step === 3 && showSecondOutputToken) ||
+    (step === 4 && step5Animation.isGrowing) ||
+    (step === 5 && step6Animation.isGrowing);
 
   // 모여들기 목표 지점: User 마지막 토큰과 첫 Assistant 토큰의 중간 지점을 "컨텍스트"처럼 사용
   const targetPosition: Vector3Tuple = useMemo(() => {
     if (userTokens.length === 0) return [0, 0, 0];
 
-    // Step4: zero-length next 토큰을 대상으로 할 때는 직전 assistant(or user)와 next의 중점을 사용
-    if (step === 3) {
-      const zeroVectorIndex = assistantTokens.findIndex((t) => t.token === 'next');
-      const zeroVectorToken = zeroVectorIndex >= 0 ? assistantTokens[zeroVectorIndex] : undefined;
-      const prevToken =
-        zeroVectorIndex > 0
-          ? assistantTokens[zeroVectorIndex - 1]
-          : userTokens[userTokens.length - 1];
-
-      if (zeroVectorToken) {
-        const startPoint = (prevToken?.destination as Vector3Tuple) ?? (userTokens[userTokens.length - 1].destination as Vector3Tuple);
-        const endPoint = zeroVectorToken.destination as Vector3Tuple;
-        return calculateMidpoint(startPoint, endPoint);
+    // Step5: HomePage와 동일한 로직으로 계산
+    if (step === 4 && assistantTokens.length >= 2) {
+      const animationStep = step5Animation.animationStep;
+      
+      // api호출결과가 없거나 애니메이션이 끝까지 간경우
+      if (animationStep >= 2) {
+        return [0, 0, 0];
       }
+
+      // animationStep번째 출력 토큰
+      const nextOutputToken = assistantTokens[animationStep];
+
+      // 혹시 범위 밖인 경우를 위한 방어
+      if (!nextOutputToken) return [0, 0, 0];
+
+      // 시작점 계산: 원점 or 이전토큰 목적지
+      let startPoint: Vector3Tuple = [0, 0, 0];
+      if (animationStep > 0) {
+        // 이전 출력 토큰 destination
+        startPoint = assistantTokens[animationStep - 1].destination as Vector3Tuple;
+      } else if (userTokens.length > 0) {
+        // 첫 출력 토큰이면 마지막 입력 토큰의 destination
+        startPoint = userTokens[userTokens.length - 1].destination as Vector3Tuple;
+      }
+
+      // 끝점, 다음 출력 토큰의 destination
+      const endPoint = nextOutputToken.destination as Vector3Tuple;
+
+      // 중간점 계산
+      return calculateMidpoint(startPoint, endPoint);
+    }
+
+    // Step6: HomePage와 동일한 로직으로 계산 (세 번째부터 마지막까지)
+    if (step === 5 && assistantTokens.length >= 3) {
+      const animationStep = step6Animation.animationStep;
+      
+      // 애니메이션이 끝까지 간경우
+      if (animationStep >= step6MaxSteps) {
+        return [0, 0, 0];
+      }
+
+      // 세 번째 토큰부터 시작하므로 인덱스는 2 + animationStep
+      const nextOutputTokenIndex = 2 + animationStep;
+      const nextOutputToken = assistantTokens[nextOutputTokenIndex];
+
+      // 혹시 범위 밖인 경우를 위한 방어
+      if (!nextOutputToken) return [0, 0, 0];
+
+      // 시작점 계산: 이전 출력 토큰 목적지 (첫 번째는 assistantTokens[1])
+      let startPoint: Vector3Tuple = [0, 0, 0];
+      if (animationStep > 0) {
+        // 이전 출력 토큰 destination (2 + animationStep - 1 = 1 + animationStep)
+        startPoint = assistantTokens[1 + animationStep].destination as Vector3Tuple;
+      } else {
+        // 첫 번째 (세 번째 토큰)이면 두 번째 토큰의 destination
+        startPoint = assistantTokens[1].destination as Vector3Tuple;
+      }
+
+      // 끝점, 다음 출력 토큰의 destination
+      const endPoint = nextOutputToken.destination as Vector3Tuple;
+
+      // 중간점 계산
+      return calculateMidpoint(startPoint, endPoint);
+    }
+
+    if (step === 3 && assistantTokens.length > 1) {
+      const startPoint = assistantTokens[0].destination as Vector3Tuple;
+      const endPoint = assistantTokens[1].destination as Vector3Tuple;
+      return calculateMidpoint(startPoint, endPoint);
     }
 
     const startPoint = userTokens[userTokens.length - 1].destination as Vector3Tuple;
@@ -250,15 +337,19 @@ const HowItWorksPage: React.FC = () => {
     if (!firstAssistant) return startPoint;
     const endPoint = firstAssistant.destination as Vector3Tuple;
     return calculateMidpoint(startPoint, endPoint);
-  }, [step, userTokens, assistantTokens]);
+  }, [step, userTokens, assistantTokens, step5Animation.animationStep, step6Animation.animationStep, step6MaxSteps]);
 
   // 스텝별 애니메이션 진행(한 번 재생)
+  // Step5는 useAnimationTimer를 사용하므로 여기서는 제외
   useEffect(() => {
+    // Step5는 useAnimationTimer가 처리하므로 스킵
+    if (step === 4) return;
+
     setGatherMoveProgress(0);
     setGatherEffectProgress(0);
     setGrowProgress(0);
     setShowFirstOutputToken(false);
-    setShowZeroLengthToken(false);
+    setShowSecondOutputToken(false);
 
     let raf = 0;
     let start = 0;
@@ -275,9 +366,9 @@ const HowItWorksPage: React.FC = () => {
         if (moveT < 1) raf = window.requestAnimationFrame(run);
       }
 
-      // Step3(=step===2): 먼저 shrink 시작 → 그 다음 grow 시작
+      // Step3(=step===2): shrink then grow first output token
       if (step === 2) {
-        setGatherMoveProgress(1); // Step2에서 모인 위치에서 시작
+        setGatherMoveProgress(1);
 
         const shrinkDuration = 650;
         const growDuration = 1100;
@@ -286,57 +377,49 @@ const HowItWorksPage: React.FC = () => {
           const effectT = Math.min(1, elapsed / shrinkDuration);
           setGatherEffectProgress(effectT);
           setGrowProgress(0);
-          setShowFirstOutputToken(false); // shrink 완료 전에는 출력 토큰을 보여주지 않음
+          setShowFirstOutputToken(false);
           raf = window.requestAnimationFrame(run);
           return;
         }
 
         setGatherEffectProgress(1);
-        setShowFirstOutputToken(true); // shrink 완료 후에 출력 토큰을 보여주고 grow 시작
+        setShowFirstOutputToken(true);
         const growElapsed = elapsed - shrinkDuration;
         const growT = Math.min(1, growElapsed / growDuration);
         setGrowProgress(growT);
         if (growT < 1) raf = window.requestAnimationFrame(run);
       }
 
-      // Step4(=step===3): 길이 0 벡터(next) 예시 - 모이기(gather) → shrink → next 토큰 등장(생성)까지 보여줌
-      // 실제로 사용하는 코드블럭을 재사용하면 오히려 헷갈리므로 별도로 작성
+      // Step4(=step===3): gather then show second output token
       if (step === 3) {
         const gatherDuration = 1200;
         const shrinkDuration = 650;
         const growDuration = 1100;
 
-        // 1) 모이기 애니메이션 (토큰들이 컨텍스트 위치로 이동)
         if (elapsed < gatherDuration) {
           const moveT = Math.min(1, elapsed / gatherDuration);
           setGatherMoveProgress(moveT);
           setGatherEffectProgress(0);
           setGrowProgress(0);
-          setShowZeroLengthToken(false);
+          setShowSecondOutputToken(false);
           if (moveT < 1) raf = window.requestAnimationFrame(run);
           return;
         }
 
-        // 모이기 완료
         setGatherMoveProgress(1);
 
         const afterGatherElapsed = elapsed - gatherDuration;
-
-        // 2) shrink 
         if (afterGatherElapsed < shrinkDuration) {
           const effectT = Math.min(1, afterGatherElapsed / shrinkDuration);
           setGatherEffectProgress(effectT);
           setGrowProgress(0);
-          setShowZeroLengthToken(false);
+          setShowSecondOutputToken(false);
           raf = window.requestAnimationFrame(run);
           return;
         }
 
-        // shrink 완료 → zero-length next 토큰 등장
         setGatherEffectProgress(1);
-        setShowZeroLengthToken(true);
-
-        // 3) grow 단계 (실제 화살표는 길이 0이라 보이지 않지만, 생성 타이밍을 맞추기 위해 유지)
+        setShowSecondOutputToken(true);
         const growElapsed = afterGatherElapsed - shrinkDuration;
         const growT = Math.min(1, growElapsed / growDuration);
         setGrowProgress(growT);
@@ -353,16 +436,62 @@ const HowItWorksPage: React.FC = () => {
     };
   }, [step, replayKey]);
 
+  // Step5: HomePage와 동일한 로직으로 자동 재생 시작
+  const { resetAnimation: resetStep5Animation, setIsPlaying: setStep5Playing } = step5Animation;
+  useEffect(() => {
+    if (step === 4 && assistantTokens.length >= 2) {
+      // 리셋 후 재생 시작
+      resetStep5Animation();
+      // 상태 업데이트가 완료된 후 재생 시작
+      const timer = setTimeout(() => {
+        setStep5Playing(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    } else if (step !== 4) {
+      // 다른 스텝으로 이동하면 재생 중지
+      setStep5Playing(false);
+    }
+  }, [step, replayKey, assistantTokens.length, resetStep5Animation, setStep5Playing]);
+
+  // Step6: HomePage와 동일한 로직으로 자동 재생 시작 (세 번째~마지막 아웃풋 토큰)
+  const { resetAnimation: resetStep6Animation, setIsPlaying: setStep6Playing } = step6Animation;
+  useEffect(() => {
+    if (step === 5 && assistantTokens.length >= 3) {
+      // 리셋 후 재생 시작
+      resetStep6Animation();
+      // 상태 업데이트가 완료된 후 재생 시작
+      const timer = setTimeout(() => {
+        setStep6Playing(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    } else if (step !== 5) {
+      // 다른 스텝으로 이동하면 재생 중지
+      setStep6Playing(false);
+    }
+  }, [step, replayKey, assistantTokens.length, resetStep6Animation, setStep6Playing]);
+
   return (
     <div className={styles.container}>
       <TokenVisualization
         tokens={visibleTokens}
-        isAnimating={isAnimating}
-        animationProgress={gatherMoveProgress}
-        gatherEffectProgress={gatherEffectProgress}
+        isAnimating={
+          step === 4 ? step5Animation.isGathering : 
+          step === 5 ? step6Animation.isGathering : 
+          isAnimating
+        }
+        animationProgress={
+          step === 4 ? step5Animation.gatherProgress : 
+          step === 5 ? step6Animation.gatherProgress : 
+          gatherMoveProgress
+        }
+        gatherEffectProgress={step === 4 || step === 5 ? 0 : gatherEffectProgress}
         targetPosition={targetPosition}
         isGrowing={isGrowing}
-        growProgress={growProgress}
+        growProgress={
+          step === 4 ? step5Animation.growProgress : 
+          step === 5 ? step6Animation.growProgress : 
+          growProgress
+        }
       />
 
       {/* 상단: 언어 선택 + 스텝 버튼 */}
@@ -430,7 +559,7 @@ const HowItWorksPage: React.FC = () => {
             {uiText.prev}
           </button>
           <div className={styles.stepHint}>{uiText.stepLabel(step + 1, steps.length)}</div>
-          <button className={styles.navButton} type="button" onClick={handleNext} disabled={step === 4}>
+          <button className={styles.navButton} type="button" onClick={handleNext} disabled={step === 5}>
             {uiText.next}
           </button>
         </div>

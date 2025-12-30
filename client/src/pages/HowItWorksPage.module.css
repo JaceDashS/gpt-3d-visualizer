@@ -4,6 +4,20 @@
   height: 100vh;
 }
 
+/* 모바일에서 동적 뷰포트 높이 사용 */
+@supports (height: 100dvh) {
+  .container {
+    height: 100dvh;
+  }
+}
+
+:root {
+  --howit-bottom-offset: 30px;
+  --howit-bottom-width: min(760px, calc(500px));
+  --howit-bottom-padding: 14px 18px;
+  --howit-bottom-max-height: 65vh;
+}
+
 .topBar {
   position: absolute;
   top: 20px;
@@ -16,6 +30,15 @@
   padding: 16px 18px;
   color: var(--color-white);
   font-family: var(--font-monospace);
+}
+
+@media (max-width: 640px) {
+  .topBar {
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(620px, calc(100% - 16px));
+    max-width: none;
+  }
 }
 
 .headerRow {
@@ -110,17 +133,19 @@
 
 .bottomPanel {
   position: absolute;
-  bottom: 30px;
+  bottom: var(--howit-bottom-offset);
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
-  width: min(760px, calc(100% - 40px));
+  width: var(--howit-bottom-width);
   background: var(--color-background-overlay);
   border: 1px solid var(--color-border);
   border-radius: 12px;
-  padding: 14px 18px;
+  padding: var(--howit-bottom-padding);
   color: var(--color-white);
   font-family: var(--font-monospace);
+  max-height: var(--howit-bottom-max-height);
+  overflow-y: auto;
 }
 
 .stepTitle {
@@ -171,6 +196,15 @@
 .link {
   color: var(--color-blue);
   text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --howit-bottom-offset: 30px;
+    --howit-bottom-width: min(620px, calc(100% - 16px));
+    --howit-bottom-padding: 14px 14px;
+    --howit-bottom-max-height: 65vh;
+  }
 }
 
 
