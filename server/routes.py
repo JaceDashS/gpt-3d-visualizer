@@ -64,10 +64,10 @@ def visualize_sync(request: VisualizeRequest) -> VisualizeResponse:
             input_token_strs = [llama.detokenize([t]).decode('utf-8', errors='replace') for t in input_tokens]
             print(f"[VISUALIZE] Input tokens: {len(input_token_strs)}")
             
-            # Remove empty string tokens
-            input_filtered = [(token, emb) for token, emb in zip(input_token_strs, input_embeddings) if token.strip()]
-            input_token_strs = [t for t, _ in input_filtered]
-            input_embeddings = [e for _, e in input_filtered]
+            # Remove empty string tokens only (preserve leading spaces)
+            # input_filtered = [(token, emb) for token, emb in zip(input_token_strs, input_embeddings) if token != ""]
+            # input_token_strs = [t for t, _ in input_filtered]
+            # input_embeddings = [e for _, e in input_filtered]
             print(f"[VISUALIZE] Filtered input tokens: {len(input_token_strs)}")
             
             print("[VISUALIZE] Extracting output embeddings...")
@@ -99,10 +99,10 @@ def visualize_sync(request: VisualizeRequest) -> VisualizeResponse:
             output_token_strs = [llama.detokenize([t]).decode('utf-8', errors='replace') for t in output_tokens]
             print(f"[VISUALIZE] Output tokens: {len(output_token_strs)}")
             
-            # Remove empty string tokens
-            output_filtered = [(token, emb) for token, emb in zip(output_token_strs, output_embeddings) if token.strip()]
-            output_token_strs = [t for t, _ in output_filtered]
-            output_embeddings = [e for _, e in output_filtered]
+            # Remove empty string tokens only (preserve leading spaces)
+            # output_filtered = [(token, emb) for token, emb in zip(output_token_strs, output_embeddings) if token != ""]
+            # output_token_strs = [t for t, _ in output_filtered]
+            # output_embeddings = [e for _, e in output_filtered]
             print(f"[VISUALIZE] Filtered output tokens: {len(output_token_strs)}")
             
             print("[VISUALIZE] Applying PCA...")
