@@ -5,3 +5,10 @@
   height: 100vh;
 }
 
+/* 모바일에서 동적 뷰포트 높이 사용 */
+@supports (height: 100dvh) {
+  .container {
+    height: 100dvh;
+  }
+}
+

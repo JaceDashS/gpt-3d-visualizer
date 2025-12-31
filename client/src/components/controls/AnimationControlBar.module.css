@@ -16,6 +16,14 @@
   font-family: var(--font-monospace);
 }
 
+@media (max-width: 640px) {
+  .container {
+    bottom: 30px;
+    width: min(620px, calc(100% - 16px));
+    padding: 14px 14px;
+  }
+}
+
 .containerDisabled {
   opacity: 0.5;
 }
