@@ -62,8 +62,13 @@ const AnimationControlBar: React.FC<AnimationControlBarProps> = ({
           onClick={onPlayPause}
           disabled={isDisabled}
           className={playButtonClasses}
+          aria-label={isPlaying ? 'Pause' : 'Play'}
         >
-          {isPlaying ? '⏸' : '▶'}
+          {isPlaying ? (
+            <span className={styles.pauseIcon}></span>
+          ) : (
+            <span className={styles.playIcon}></span>
+          )}
         </button>
 
         {/* 슬라이더 */}
