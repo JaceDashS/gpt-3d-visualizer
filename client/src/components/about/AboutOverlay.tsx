@@ -1,19 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import styles from './AboutOverlay.module.css';
-import { aboutApi, AboutResponse } from '../../services/api';
-import { OVERLAY_SLIDE_DOWN_DURATION, ABOUT_SCROLLBAR_FADE_OUT_DELAY } from '../../constants/animation';
-import { ASSETS_CONFIG, API_CONFIG } from '../../config/api';
+import { API_CONFIG, ASSETS_CONFIG } from '../../config/api';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { fetchAssetsManifest, fetchProfileOverview, getAssetUrl } from '../../services/assetService';
+import { ProfileOverviewData } from '../../types/assets';
+import { OVERLAY_SLIDE_DOWN_DURATION, ABOUT_SCROLLBAR_FADE_OUT_DELAY } from '../../constants/animation';
 
 interface AboutOverlayProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-
-
 const AboutOverlay: React.FC<AboutOverlayProps> = ({ isOpen, onClose }) => {
-  const [aboutData, setAboutData] = useState<AboutResponse | null>(null);
+  const [profileData, setProfileData] = useState<ProfileOverviewData | null>(null);
+  const [profileImage, setProfileImage] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasTriedFetch, setHasTriedFetch] = useState(false);
@@ -48,26 +48,37 @@ const AboutOverlay: React.FC<AboutOverlayProps> = ({ isOpen, onClose }) => {
     };
   }, [isOpen, isMounted]);
 
-  // 컴포넌트 마운트 시 한 번만 /api/about 호출 시도 (메인 페이지 진입 시 미리 로드)
+  // 컴포넌트 마운트 시 한 번만 호출 시도
   useEffect(() => {
-    // console.log('AboutOverlay useEffect 실행', { aboutData, isLoading, hasTriedFetch });
-    
-    if (aboutData || isLoading || hasTriedFetch) {
-    //   console.log('AboutOverlay fetch 스킵 - 조건 불만족');
+    if (profileData || isLoading || hasTriedFetch) {
       return;
     }
 
-    const fetchAbout = async () => {
-    //   console.log('AboutOverlay fetch 시작');
+    const loadData = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        const data = await aboutApi.getAbout();
-        setAboutData(data);
-        // console.log('aboutData', data);
+        const manifest = await fetchAssetsManifest();
+        if (manifest) {
+          // Profile Overview 로드
+          const data = await fetchProfileOverview(manifest);
+          setProfileData(data);
+
+          // home-large-2.png 로드 (표시하지 않음)
+          if (manifest.sets.homePhotos) {
+            const photo = manifest.sets.homePhotos.items.find(p => p.file === 'home-large-2.png');
+            if (photo) {
+              const url = getAssetUrl(manifest.sets.homePhotos.basePath, photo.file);
+              setProfileImage(url);
+              // console.log('Loaded profile image (hidden):', url);
+            }
+          }
+        } else {
+            setError('Failed to load manifest.');
+        }
       } catch (err: unknown) {
-        console.error('Failed to fetch about:', err);
+        console.error('Failed to fetch data:', err);
         setError('Failed to load data.');
       } finally {
         setIsLoading(false);
@@ -75,14 +86,74 @@ const AboutOverlay: React.FC<AboutOverlayProps> = ({ isOpen, onClose }) => {
       }
     };
 
-    fetchAbout();
-  }, [aboutData, isLoading, hasTriedFetch]);
+    loadData();
+  }, [profileData, isLoading, hasTriedFetch]);
 
-  const localizedText = useMemo(() => {
-    if (!aboutData) return null;
-    // 해당 언어의 텍스트가 있으면 사용, 없으면 영어로 fallback
-    return aboutData[language] ?? aboutData.en ?? '';
-  }, [aboutData, language]);
+  // profileImage 사용 (경고 방지 및 디버깅용)
+  useEffect(() => {
+    if (profileImage) {
+       // console.log('Current profile image URL:', profileImage);
+    }
+  }, [profileImage]);
+
+  const currentLangData = useMemo(() => {
+    if (!profileData) return null;
+    return profileData[language] || profileData['en'];
+  }, [profileData, language]);
+
+  const linkedDescription = useMemo(() => {
+    if (!currentLangData?.description) return null;
+
+    const description = currentLangData.description;
+    const links = currentLangData.links;
+
+    // 링크 매핑 (환경 변수 등에서 URL 가져오기)
+    const linkEntries = [
+      {
+        key: 'composition',
+        text: links?.composition,
+        url: process.env.REACT_APP_COMPOSITION_URL || '',
+      },
+      {
+        key: 'guitar',
+        text: links?.guitar,
+        url: process.env.REACT_APP_GUITAR_URL || '',
+      },
+    ].filter((entry) => entry.text && entry.url) as Array<{
+      key: string;
+      text: string;
+      url: string;
+    }>;
+
+    if (linkEntries.length === 0) return description;
+
+    const escapeRegex = (value: string) =>
+      value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const pattern = linkEntries.map((entry) => escapeRegex(entry.text)).join('|');
+    if (!pattern) return description;
+
+    const regex = new RegExp(`(${pattern})`, 'g');
+    const parts = description.split(regex);
+
+    return parts.map((part, index) => {
+      const linkEntry = linkEntries.find((entry) => entry.text === part);
+      if (!linkEntry) {
+        return <span key={index}>{part}</span>;
+      }
+      return (
+        <a
+          key={`${linkEntry.key}-${index}`}
+          href={linkEntry.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.descriptionLink}
+        >
+          {part}
+        </a>
+      );
+    });
+  }, [currentLangData]);
 
   const viewAppsText = useMemo(() => {
     switch (language) {
@@ -134,7 +205,7 @@ const AboutOverlay: React.FC<AboutOverlayProps> = ({ isOpen, onClose }) => {
         window.clearTimeout(scrollTimeoutRef.current);
       }
     };
-  }, [localizedText, isMounted]);
+  }, [linkedDescription, isMounted]);
 
   if (!isMounted) {
     return null;
@@ -175,7 +246,7 @@ const AboutOverlay: React.FC<AboutOverlayProps> = ({ isOpen, onClose }) => {
         <div className={styles.content}>
           <div className={styles.profileWrapper}>
             <img
-              src={ASSETS_CONFIG.profileImage}
+              src={profileImage || ASSETS_CONFIG.profileImage}
               alt="Profile"
               className={styles.profileImage}
             />
@@ -224,8 +295,8 @@ const AboutOverlay: React.FC<AboutOverlayProps> = ({ isOpen, onClose }) => {
             {!isLoading && error && (
               <p className={styles.message}>{error}</p>
             )}
-            {!isLoading && !error && localizedText && (
-              <p className={styles.aboutText}>{localizedText}</p>
+            {!isLoading && !error && linkedDescription && (
+              <p className={styles.aboutText}>{linkedDescription}</p>
             )}
             </div>
             <a
