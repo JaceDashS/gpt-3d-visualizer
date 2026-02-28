@@ -1,4 +1,4 @@
-import { API_BASE_URL, API_PREFIX } from '../config/api';
+import { API_BASE_URL, API_PREFIX, ASSETS_CONFIG } from '../config/api';
 
 export interface VisualizeRequest {
   input_text: string;
@@ -14,6 +14,15 @@ export interface VisualizeResponse {
   tokens: TokenVector[];
 }
 
+// About 페이지 소개글 응답 타입
+// GitHub JSON에서 { en, ko, ja, zh } 형태로 가져옴
+export interface AboutResponse {
+  en: string;
+  ko: string;
+  ja: string;
+  zh: string;
+}
+
 export const visualizeApi = {
   /**
    * 모델 추론을 수행하고 토큰 벡터 데이터를 반환합니다.
@@ -23,6 +32,9 @@ export const visualizeApi = {
   async getTokenVectors(inputText: string): Promise<VisualizeResponse> {
     try {
       const requestUrl = `${API_BASE_URL}${API_PREFIX}/visualize`;
+      // console.log('[API] Request URL:', requestUrl);
+      // console.log('[API] API_BASE_URL:', API_BASE_URL);
+      // console.log('[API] REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
       
       const response = await fetch(requestUrl, {
         method: 'POST',
@@ -45,9 +57,24 @@ export const visualizeApi = {
   },
 };
 
-// About 페이지 관련 API는 assetService.ts로 이동됨
-// export interface AboutResponse ...
-// export const aboutApi ...
+export const aboutApi = {
+  /**
+   * GitHub에서 소개글(다국어) JSON을 가져온다.
+   * { en, ko, ja, zh } 형태의 객체를 반환.
+   */
+  async getAbout(): Promise<AboutResponse> {
+    const response = await fetch(ASSETS_CONFIG.profileOverview, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch about: ${response.status}`);
+    }
+
+    const data = (await response.json()) as AboutResponse;
+    return data;
+  },
+};
 
 // 코멘트/피드백 시스템 인터페이스
 export interface CommentRequest {
