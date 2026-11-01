@@ -8,24 +8,10 @@
     "client:build": "cd client && npm run build",
     "build": "cd client && npm run build",
     "client:test": "cd client && npm test",
-    "server:start": "cd server && .\\venv\\Scripts\\python.exe main.py",
-    "server:dev": "cd server && .\\venv\\Scripts\\python.exe main.py",
-    "server:install": "cd server && .\\venv\\Scripts\\pip.exe install -r requirements.txt",
-    "server:docker:build": "cd server && docker build -t gpt-visualizer-server .",
-    "server:docker:build:no-cache": "cd server && docker build --no-cache -t gpt-visualizer-server .",
-    "server:docker:run": "docker run -d -p 8080:8080 --name gpt-visualizer-server gpt-visualizer-server",
-    "server:docker:build:no-cache:run": "cd server && docker build --no-cache -t gpt-visualizer-server . && docker run -d -p 8080:8080 --name gpt-visualizer-server gpt-visualizer-server",
-    "server:docker:stop": "docker stop gpt-visualizer-server",
-    "server:docker:logs": "docker logs -f gpt-visualizer-server",
-    "server:docker:rebuild": "docker stop gpt-visualizer-server 2>nul & docker rm gpt-visualizer-server 2>nul & cd server && docker build --no-cache -t gpt-visualizer-server . && docker run -d -p 8080:8080 --name gpt-visualizer-server gpt-visualizer-server",
-    "install:all": "npm install && npm run server:install",
-    "dev": "concurrently \"npm run client:start\" \"npm run server:dev\"",
     "dev:client": "npm run client:start",
-    "dev:server": "npm run server:dev",
-    "spell-check": "codespell --skip='*.pyc,venv/*,node_modules/*,__pycache__/*,package-lock.json'"
+    "spell-check": "codespell --skip='node_modules/*,package-lock.json'"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
     "cross-env": "^10.1.0"
   },
   "engines": {
