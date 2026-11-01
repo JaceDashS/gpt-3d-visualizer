@@ -5,6 +5,7 @@ const HEALTH_PATH = '/health';
 const HEALTH_TIMEOUT_MS = 10000;
 const SUPPORTED_SCHEMA_VERSION = 1;
 
+// 서버는 더 이상 maintenance를 보내지 않지만, 예전 응답도 해석할 수 있게 남겨 둔다
 export type ServiceStatus = 'operational' | 'maintenance' | 'unavailable' | 'unknown';
 
 const KNOWN_STATUSES: ReadonlySet<string> = new Set([
@@ -19,14 +20,10 @@ export interface MaintenanceWindow {
   expectedEndsAt: string | null;
 }
 
+// 공지는 제목만 있다. 게시한 때부터 관리자가 종료할 때까지 내려온다
 export interface Announcement {
   id: string;
   title: string;
-  content: string;
-  startsAt: string | null;
-  endsAt: string | null;
-  maintenanceFrom: string | null;
-  maintenanceUntil: string | null;
 }
 
 export interface ServiceHealth {
@@ -79,13 +76,8 @@ const parseAnnouncements = (value: unknown): Announcement[] => {
     .map((item, index) => ({
       id: item.id !== undefined && item.id !== null ? String(item.id) : `announcement-${index}`,
       title: asString(item.title) ?? '',
-      content: asString(item.content) ?? '',
-      startsAt: asString(item.startsAt),
-      endsAt: asString(item.endsAt),
-      maintenanceFrom: asString(item.maintenanceFrom),
-      maintenanceUntil: asString(item.maintenanceUntil),
     }))
-    .filter(a => a.title || a.content);
+    .filter(a => a.title);
 };
 
 // 응답 본문을 해석한다. 계약과 다르면 UNKNOWN_HEALTH

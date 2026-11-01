@@ -4,7 +4,6 @@ import { InputPanel, AnimationControlBar, LoadingIndicator, TextSizeSlider } fro
 import { useVisualizationApi, useAnimationTimer } from '../hooks';
 import { useTextSize } from '../contexts/TextSizeContext';
 import { useServiceHealth } from '../contexts/ServiceHealthContext';
-import ServiceStatusBanner from '../components/status/ServiceStatusBanner';
 import AuthStatus from '../components/auth/AuthStatus';
 import { TokenVector } from '../services/api';
 import { calculateMidpoint, Vector3Tuple } from '../utils/vectorMath';
@@ -157,12 +156,7 @@ const HomePage: React.FC = () => {
         isLoading={isLoading}
         error={error}
         isSubmitBlocked={isMaintenance}
-        header={
-          <>
-            <AuthStatus />
-            <ServiceStatusBanner />
-          </>
-        }
+        header={<AuthStatus />}
       />
 
       {/* 3D 시각화 - 항상 표시 (좌표계는 항상 보임) */}

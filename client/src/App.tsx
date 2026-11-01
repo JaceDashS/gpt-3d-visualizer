@@ -9,6 +9,7 @@ import FeedbackOverlay from './components/feedback/FeedbackOverlay';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { TextSizeProvider } from './contexts/TextSizeContext';
 import { ServiceHealthProvider } from './contexts/ServiceHealthContext';
+import ServiceNoticeToasts from './components/status/ServiceNoticeToasts';
 
 function App() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
@@ -45,6 +46,7 @@ function App() {
       />
       <AboutOverlay isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
       <FeedbackOverlay isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
+      <ServiceNoticeToasts />
     </BrowserRouter>
     </TextSizeProvider>
     </ServiceHealthProvider>

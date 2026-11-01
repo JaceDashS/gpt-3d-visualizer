@@ -33,8 +33,14 @@ Cloud Run cleanup: workflow removed in `c170682b7553091fcbedcd642ebfa70b846df74a
 - No prewarm call. The client never requests `/external/health`.
 - On entry: one `GET /health?app=<id>` without credentials, 10 s timeout. A 503 body is still parsed.
   Fetch failure, invalid JSON, unknown `schemaVersion` or `serviceStatus` → "Status unknown" (never shown as maintenance).
-  `message`, announcement `title` and `content` are rendered as plain text.
-  `maintenance` status disables the Visualize button.
+  `message` and announcement `title` are rendered as plain text. Announcements are titles only (platform commit
+  `1164264`): shown from publication until an administrator ends them, with no period or maintenance schedule.
+  `maintenance` status (sent only by older servers) still disables the Visualize button.
+- Display (same rule as jace-s.com): toasts slide down from the top center, 12 px top gap, width
+  `min(512px, 100% - 24px)`, stacked in order. A status toast with `message` comes first when `serviceStatus` is not
+  operational; it stays until closed (role alert). Then one toast per announcement title, closed after 8 s (role status).
+  Every toast has a close button; clicks outside pass through. Code: `client/src/components/status/ServiceNoticeToasts.tsx`,
+  mounted once in `App.tsx` and rendered into `document.body`.
 - Login (only on `REACT_APP_LOGIN_HOSTS`): `GET /api/auth/session` with `credentials: 'include'` on entry,
   on window focus, and when the opened window closes. Login and account pages open in a new window.
   Network failure → "Failed to check login status" (not treated as logged out). No session-based POST/PUT/DELETE.
@@ -47,7 +53,7 @@ Cloud Run cleanup: workflow removed in `c170682b7553091fcbedcd642ebfa70b846df74a
 Checked with a production build and Playwright using mocked platform responses (not the real server):
 
 - [x] No `/external/health` request
-- [x] `/health?app=<id>`: operational (no banner), maintenance 503 (banner, notices, button disabled),
+- [x] `/health?app=<id>` (earlier banner version): operational (no banner), maintenance 503 (banner, notices, button disabled),
       unavailable 503 (server message shown), network failure / invalid JSON / unknown schema ("Status unknown")
 - [x] Notice HTML is shown as text
 - [x] Session cookie sent only on `/api/auth/session`, not on `/health` or inference
