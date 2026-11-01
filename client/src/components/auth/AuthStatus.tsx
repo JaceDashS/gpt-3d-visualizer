@@ -4,7 +4,7 @@ import { useAuthSession } from '../../hooks/useAuthSession';
 import { buildAccountUrl, buildLoginUrl, isLoginSupportedHost } from '../../services/auth';
 import styles from './AuthStatus.module.css';
 
-// 로그인 상태 표시. visualizer.jace-s.com 에서만 렌더링한다
+// 로그인 상태 표시. gpt-3d-visualizer.jace-s.com 에서만 렌더링한다
 const AuthStatusInner: React.FC = () => {
   const { language } = useLanguage();
   const { session, openPlatformWindow } = useAuthSession(true);

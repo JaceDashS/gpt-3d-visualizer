@@ -14,8 +14,9 @@ API server: `https://jace-s.com` (`jace-s-platform` repository).
 
 Server state at recording (reported by the operator): production `/health` already returns schemaVersion 1.
 The server currently ignores `?app` and returns all-app notices only; per-app notices start working after the
-server deploy with no client change. `https://visualizer.jace-s.com` is not an allowed origin yet, so the login UI
-stays hidden on `gpt-3d-visualizer.vercel.app` (default `REACT_APP_LOGIN_HOSTS`).
+server deploy with no client change. From 2026-11-02 the same Vercel project also serves `https://gpt-3d-visualizer.jace-s.com`
+(jace-s decision D-0191), which the server allows as an origin. The login UI shows only there; it stays hidden on
+`gpt-3d-visualizer.vercel.app`, which keeps working (default `REACT_APP_LOGIN_HOSTS`).
 
 Cloud Run cleanup: workflow removed in `c170682b7553091fcbedcd642ebfa70b846df74a`, server copy removed in `6dcee0fa5fda95529e1c7a3540e5b0f3d4a40247`. Server source of truth: jace-s-platform `services/visualizer/server`.
 
@@ -26,7 +27,7 @@ Cloud Run cleanup: workflow removed in `c170682b7553091fcbedcd642ebfa70b846df74a
 | `REACT_APP_API_URL` | Platform origin, e.g. `https://jace-s.com` |
 | `REACT_APP_API_PREFIX` | Visualizer API prefix, e.g. `/api/gptvisualizer` |
 | `REACT_APP_NOTICE_APP_ID` | Registered app ID (positive integer). Empty or invalid → `/health` without `app`, so only all-app notices are received |
-| `REACT_APP_LOGIN_HOSTS` | Optional, comma-separated hostnames that show the login UI. Default: `visualizer.jace-s.com` |
+| `REACT_APP_LOGIN_HOSTS` | Optional, comma-separated hostnames that show the login UI. Default: `gpt-3d-visualizer.jace-s.com` |
 
 ## Behavior
 
@@ -65,8 +66,8 @@ Checked with a production build and Playwright using mocked platform responses (
 
 Pending (needs the real deployment):
 
-- [ ] `visualizer.jace-s.com` domain connected in Vercel (repository owner)
-- [ ] `https://visualizer.jace-s.com` added to the server's allowed origins before deploying
+- [ ] `gpt-3d-visualizer.jace-s.com` domain connected in Vercel (repository owner)
+- [ ] `https://gpt-3d-visualizer.jace-s.com` added to the server's allowed origins before deploying
 - [ ] Real login → name → logout on jace-s.com → login button after focus
 - [ ] Login UI not shown on `gpt-3d-visualizer.vercel.app`
 - [ ] Set `REACT_APP_NOTICE_APP_ID=21` in the Vercel project (Production and Preview)

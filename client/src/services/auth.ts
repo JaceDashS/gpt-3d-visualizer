@@ -3,7 +3,7 @@ import type { Language } from '../pages/HowItWorksPage';
 
 // 로그인은 jace-s.com과 같은 사이트인 호스트에서만 동작한다 (세션 쿠키 SameSite strict).
 // gpt-3d-visualizer.vercel.app 등에서는 쿠키가 실리지 않으므로 로그인 UI를 숨긴다.
-const DEFAULT_LOGIN_HOSTS = ['visualizer.jace-s.com'];
+const DEFAULT_LOGIN_HOSTS = ['gpt-3d-visualizer.jace-s.com'];
 
 const getLoginHosts = (): string[] => {
   const raw = process.env.REACT_APP_LOGIN_HOSTS;
