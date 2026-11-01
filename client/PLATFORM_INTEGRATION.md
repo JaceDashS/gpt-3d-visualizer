@@ -17,6 +17,8 @@ The server currently ignores `?app` and returns all-app notices only; per-app no
 server deploy with no client change. `https://visualizer.jace-s.com` is not an allowed origin yet, so the login UI
 stays hidden on `gpt-3d-visualizer.vercel.app` (default `REACT_APP_LOGIN_HOSTS`).
 
+Cloud Run cleanup: workflow removed in `c170682b7553091fcbedcd642ebfa70b846df74a`, server copy removed in `6dcee0fa5fda95529e1c7a3540e5b0f3d4a40247`. Server source of truth: jace-s-platform `services/visualizer/server`.
+
 ## Build Settings
 
 | Variable | Purpose |
