@@ -22,16 +22,7 @@ A 3D visualization tool for GPT token embeddings. This application visualizes ho
 - **Custom Hooks** for state management
 - **React Router** for navigation
 
-### Server
-- **FastAPI** (Python) - RESTful API framework
-- **llama-cpp-python** - GGUF model inference
-- **Hugging Face Hub** - Model downloading
-- **NumPy** & **scikit-learn** - PCA dimensionality reduction
-- **Uvicorn** - ASGI server
-
-### Deployment
-- **Docker** - Containerized server deployment
-- **Python 3.11** - Runtime environment
+The model server and API are operated in the jace-s-platform repository. The client calls `/api/gptvisualizer` on `https://jace-s.com`.
 
 ## Project Structure
 
@@ -56,17 +47,6 @@ gpt-visualizer/
 │   │   ├── services/          # API client
 │   │   └── config/            # API configuration
 │   └── package.json
-├── server/                    # FastAPI backend
-│   ├── main.py               # FastAPI app and endpoints
-│   ├── model.py              # Model loading and Hugging Face integration
-│   ├── routes.py             # API route handlers
-│   ├── utils.py              # Utility functions (PCA, embeddings)
-│   ├── schemas.py            # Pydantic models
-│   ├── config.py             # Server configuration
-│   ├── Dockerfile            # Docker configuration
-│   ├── requirements.txt      # Python dependencies
-│   └── models/               # Model storage (auto-created)
-│       └── .cache/           # Hugging Face cache
 └── package.json              # Root scripts
 ```
 
@@ -74,10 +54,8 @@ gpt-visualizer/
 
 ### Prerequisites
 
-- **Node.js** >= 16.0.0
-- **Python** >= 3.11
+- **Node.js** 26.x
 - **npm** >= 8.0.0
-- **Docker** (optional, for containerized deployment)
 
 ### Installation
 
@@ -87,62 +65,19 @@ gpt-visualizer/
    cd gpt-visualizer
    ```
 
-2. **Install all dependencies**
+2. **Install client dependencies**
    ```bash
-   npm run install:all
-   ```
-
-   Or install separately:
-   ```bash
-   # Client dependencies
    cd client && npm install
-
-   # Server dependencies
-   cd server && python -m venv venv
-   # Windows
-   .\venv\Scripts\activate
-   # Linux/Mac
-   source venv/bin/activate
-   pip install -r requirements.txt
    ```
 
 ### Running the Application
 
-**Start both client and server:**
 ```bash
-npm run dev
-```
-
-**Or run separately:**
-```bash
-# Client only (port 3000)
+# Client (port 3000)
 npm run client:start
-
-# Server only (port 8000)
-npm run server:dev
 ```
 
-### Docker Deployment
-
-**Build Docker image:**
-```bash
-npm run server:docker:build
-```
-
-**Run Docker container:**
-```bash
-npm run server:docker:run
-```
-
-**View logs:**
-```bash
-npm run server:docker:logs
-```
-
-**Stop container:**
-```bash
-npm run server:docker:stop
-```
+Set `REACT_APP_API_URL` (e.g. `https://jace-s.com`), `REACT_APP_API_PREFIX` (e.g. `/api/gptvisualizer`) and `REACT_APP_NOTICE_APP_ID` (`21`) for the client build. See `client/PLATFORM_INTEGRATION.md`.
 
 ## Model Information
 
@@ -150,16 +85,14 @@ The application uses **Llama-3.2-1B-Instruct-Q4_K_M** model from Hugging Face:
 - **Repository**: `bartowski/Llama-3.2-1B-Instruct-GGUF`
 - **Model Size**: ~770MB
 - **Quantization**: Q4_K_M (4-bit quantization)
-- **Download**: Automatically downloaded from Hugging Face on first run
-
-The model is automatically downloaded to `server/models/` directory when the server starts.
+- **Hosting**: Served by the jace-s-platform model server
 
 ## Usage
 
 1. Open `http://localhost:3000` in your browser
 2. Enter English text in the input field
 3. Click "Visualize" to process the text
-4. The server will:
+4. The platform server will:
    - Generate a response using the Llama model
    - Extract token embeddings from input and output
    - Apply PCA to reduce dimensions to 3D
@@ -172,7 +105,9 @@ The model is automatically downloaded to `server/models/` directory when the ser
 
 ## API Endpoints
 
-### `POST /api/visualize`
+The client calls the following platform endpoints. See `client/PLATFORM_INTEGRATION.md` for the full contract (status codes, timeouts, credentials).
+
+### `POST https://jace-s.com/api/gptvisualizer/visualize`
 
 Tokenizes input text, generates a response, extracts embeddings, and returns 3D vectors.
 
@@ -202,16 +137,18 @@ Tokenizes input text, generates a response, extracts embeddings, and returns 3D 
 }
 ```
 
-### `GET /health`
+### `GET https://jace-s.com/health?app=21`
 
-Health check endpoint.
+Service status and announcements for this app, called once on entry.
 
 **Response:**
 ```json
 {
-  "status": "healthy",
-  "service": "GPT Visualizer",
-  "version": "1.0.0"
+  "schemaVersion": 1,
+  "serviceStatus": "operational",
+  "message": "...",
+  "maintenance": null,
+  "announcements": []
 }
 ```
 
@@ -225,16 +162,6 @@ Health check endpoint.
 6. **Visualization**: Vectors are displayed in 3D space with smooth animations
 
 ## Configuration
-
-### Server Configuration (`server/config.py`)
-- `SERVER_HOST`: Server host (default: `0.0.0.0`)
-- `SERVER_PORT`: Server port (default: `8000`)
-- `CORS_ORIGINS`: Allowed CORS origins (default: `["*"]`)
-
-### Model Configuration (`server/model.py`)
-- `HF_REPO_ID`: Hugging Face repository ID
-- `HF_FILENAME`: Model filename
-- Model is automatically downloaded on first run
 
 ### Animation Settings (`client/src/constants/animation.ts`)
 - `TARGET_FPS`: Animation frame rate (default: 60)
@@ -258,51 +185,17 @@ Health check endpoint.
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start both client and server |
 | `npm run client:start` | Start client only (port 3000) |
-| `npm run server:dev` | Start server only (port 8000) |
+| `npm run build` | Build client for production (used by Vercel) |
 | `npm run client:build` | Build client for production |
-| `npm run server:install` | Install server dependencies |
-| `npm run server:docker:build` | Build Docker image |
-| `npm run server:docker:run` | Run Docker container |
-| `npm run server:docker:stop` | Stop Docker container |
-| `npm run server:docker:logs` | View Docker logs |
 | `npm run spell-check` | Run spell checker |
 
 ### Code Style
 
 - **TypeScript** for type safety on the client
-- **Python type hints** for server code
 - **Modular component architecture**
 - **Custom hooks** for reusable logic
 - **Constants** for configurable values
-- **Pydantic models** for API validation
-
-## Troubleshooting
-
-### Port Already in Use
-
-If port 8000 is already in use:
-```bash
-# Windows
-netstat -ano | findstr :8000
-Stop-Process -Id <PID> -Force
-
-# Linux/Mac
-lsof -ti:8000 | xargs kill
-```
-
-### Model Download Issues
-
-- Ensure internet connection is available
-- Check Hugging Face repository accessibility
-- Model is cached after first download in `server/models/.cache/`
-
-### Docker Issues
-
-- Ensure Docker is running
-- Check Docker logs: `npm run server:docker:logs`
-- Verify port mapping: `-p 8000:8000`
 
 ## License
 
