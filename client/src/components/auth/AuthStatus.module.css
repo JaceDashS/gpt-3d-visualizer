@@ -1,0 +1,32 @@
+.container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  min-height: 16px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--color-text-light-gray);
+}
+
+.name {
+  color: var(--color-white);
+}
+
+.link {
+  color: inherit;
+  border: none;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.link:hover {
+  color: var(--color-text-hover);
+}
+
+.error {
+  color: var(--color-red);
+}

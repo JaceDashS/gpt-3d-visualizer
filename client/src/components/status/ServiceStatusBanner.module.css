@@ -1,0 +1,52 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+
+.status,
+.announcement {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-background-dark);
+}
+
+.status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.maintenance {
+  border-color: #d4a017;
+}
+
+.unavailable {
+  border-color: var(--color-red);
+}
+
+.unknown {
+  border-color: var(--color-text-separator);
+}
+
+.message {
+  white-space: pre-wrap;
+}
+
+.time {
+  color: var(--color-text-light-gray);
+}
+
+.title {
+  display: block;
+}
+
+.content {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

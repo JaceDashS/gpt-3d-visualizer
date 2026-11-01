@@ -10,6 +10,10 @@ interface InputPanelProps {
   outputText: string;
   isLoading: boolean;
   error: string | null;
+  // 점검 중 등으로 시각화를 막아야 할 때 true
+  isSubmitBlocked?: boolean;
+  // 입력 폼 위에 표시할 영역 (로그인 상태, 서비스 상태/공지)
+  header?: React.ReactNode;
 }
 
 // 상단 입력 패널 컴포넌트
@@ -21,6 +25,8 @@ const InputPanel: React.FC<InputPanelProps> = ({
   outputText,
   isLoading,
   error,
+  isSubmitBlocked = false,
+  header,
 }) => {
   // IME 조합(한글 등) 중에는 입력 흐름이 끊기지 않도록 필터링을 미루고, 조합후 필터링 적용
   // IME 조합때문에 일시적으로 영어가 아닌 입력이 보일수 있음
@@ -49,7 +55,7 @@ const InputPanel: React.FC<InputPanelProps> = ({
     onInputChange(filterEnglishOnly(e.currentTarget.value));
   };
 
-  const isSubmitDisabled = isLoading || !inputText.trim();
+  const isSubmitDisabled = isLoading || isSubmitBlocked || !inputText.trim();
 
   const formClasses = [
     styles.form,
@@ -64,6 +70,8 @@ const InputPanel: React.FC<InputPanelProps> = ({
 
   return (
     <div className={styles.container}>
+      {header}
+
       {/* 입력 폼 */}
       <form onSubmit={onSubmit} className={formClasses}>
         <input

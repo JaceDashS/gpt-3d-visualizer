@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import styles from './FeedbackOverlay.module.css';
-import { feedbackApi } from '../../services/api';
+import { feedbackApi, FeedbackRateLimitError } from '../../services/api';
 import { API_BASE_URL } from '../../config/api';
 import { OVERLAY_SLIDE_DOWN_DURATION } from '../../constants/animation';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -109,9 +109,11 @@ const FeedbackOverlay: React.FC<FeedbackOverlayProps> = ({ isOpen, onClose }) =>
     } catch (err: unknown) {
       console.error('Failed to submit feedback:', err);
       setSubmitStatus('error');
-      setErrorMessage(
-        err instanceof Error ? err.message : texts.errorSubmit
-      );
+      if (err instanceof FeedbackRateLimitError) {
+        setErrorMessage(texts.errorRateLimited);
+      } else {
+        setErrorMessage(err instanceof Error ? err.message : texts.errorSubmit);
+      }
     } finally {
       setIsSubmitting(false);
     }

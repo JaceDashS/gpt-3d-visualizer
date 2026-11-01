@@ -3,6 +3,9 @@ import TokenVisualization from '../components/TokenVisualization';
 import { InputPanel, AnimationControlBar, LoadingIndicator, TextSizeSlider } from '../components/controls';
 import { useVisualizationApi, useAnimationTimer } from '../hooks';
 import { useTextSize } from '../contexts/TextSizeContext';
+import { useServiceHealth } from '../contexts/ServiceHealthContext';
+import ServiceStatusBanner from '../components/status/ServiceStatusBanner';
+import AuthStatus from '../components/auth/AuthStatus';
 import { TokenVector } from '../services/api';
 import { calculateMidpoint, Vector3Tuple } from '../utils/vectorMath';
 import styles from './HomePage.module.css';
@@ -14,6 +17,9 @@ const HomePage: React.FC = () => {
   const [submittedText, setSubmittedText] = useState<string>('');
   // 텍스트 크기
   const { fontSize } = useTextSize();
+  // 서비스 상태: 점검 중이면 시각화 버튼 비활성화 (상태 알 수 없음은 막지 않는다)
+  const { health } = useServiceHealth();
+  const isMaintenance = health?.serviceStatus === 'maintenance';
   // API 호출 훅
   const {
     visualizationData,
@@ -50,7 +56,7 @@ const HomePage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = inputText.trim();
-    if (trimmed) {
+    if (trimmed && !isMaintenance) {
       setSubmittedText(trimmed);
       fetchVisualization(trimmed);
     }
@@ -150,6 +156,13 @@ const HomePage: React.FC = () => {
         outputText={outputText}
         isLoading={isLoading}
         error={error}
+        isSubmitBlocked={isMaintenance}
+        header={
+          <>
+            <AuthStatus />
+            <ServiceStatusBanner />
+          </>
+        }
       />
 
       {/* 3D 시각화 - 항상 표시 (좌표계는 항상 보임) */}

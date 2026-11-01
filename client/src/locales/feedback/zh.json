@@ -13,6 +13,7 @@
   "errorContent": "请输入您的反馈。",
   "errorPassword": "请输入密码。",
   "errorSubmit": "提交反馈失败。请重试。",
+  "errorRateLimited": "请求过多，请稍后再试。",
   "closeLabel": "关闭反馈",
   "showPassword": "显示密码",
   "hidePassword": "隐藏密码"

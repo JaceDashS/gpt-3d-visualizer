@@ -13,6 +13,7 @@ export interface FeedbackTexts {
   errorContent: string;
   errorPassword: string;
   errorSubmit: string;
+  errorRateLimited: string;
   closeLabel: string;
   showPassword: string;
   hidePassword: string;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import './App.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
@@ -8,15 +8,11 @@ import AboutOverlay from './components/about/AboutOverlay';
 import FeedbackOverlay from './components/feedback/FeedbackOverlay';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { TextSizeProvider } from './contexts/TextSizeContext';
-import { prewarmServer } from './services/health';
+import { ServiceHealthProvider } from './contexts/ServiceHealthContext';
 
 function App() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-
-  useEffect(() => {
-    prewarmServer();
-  }, []);
 
   const handleToggleAbout = () => {
     setIsAboutOpen(prev => !prev);
@@ -35,6 +31,7 @@ function App() {
 
   return (
     <LanguageProvider>
+    <ServiceHealthProvider>
     <TextSizeProvider>
     <BrowserRouter>
       <Routes>
@@ -50,6 +47,7 @@ function App() {
       <FeedbackOverlay isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
     </BrowserRouter>
     </TextSizeProvider>
+    </ServiceHealthProvider>
     </LanguageProvider>
   );
 }

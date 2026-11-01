@@ -13,6 +13,7 @@
   "errorContent": "Please enter your feedback.",
   "errorPassword": "Please enter a password.",
   "errorSubmit": "Failed to submit feedback. Please try again.",
+  "errorRateLimited": "Too many requests. Please try again later.",
   "closeLabel": "Close feedback",
   "showPassword": "Show password",
   "hidePassword": "Hide password"

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { visualizeApi, VisualizeResponse, TokenVector } from '../services/api';
+import { visualizeApi, VisualizeResponse, TokenVector, getVisualizeErrorMessage } from '../services/api';
 import { flipDimensionsToForward } from '../utils/vectorMath';
 
 interface UseVisualizationApiReturn {
@@ -38,7 +38,7 @@ export const useVisualizationApi = (): UseVisualizationApiReturn => {
         });
       } catch (err) {
         console.error('Error fetching output:', err);
-        setError('Failed to fetch output');
+        setError(getVisualizeErrorMessage(err));
       } finally {
         setIsLoading(false);
       }
