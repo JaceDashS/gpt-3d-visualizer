@@ -7,10 +7,15 @@ API server: `https://jace-s.com` (`jace-s-platform` repository).
 
 | Item | Value |
 | --- | --- |
-| Client base commit | `627beb9713db905547c0fcd22a401aa60e5d2824` |
-| Server base commit (`jace-s-platform`) | TBD — provided by the jace-s operator after per-app notices are deployed |
-| Registered app ID | TBD — provided by the jace-s operator |
+| Client base commit | `0f1c15c028073ce238e7e4f61e1eec5dc326cce1` |
+| Server base commit (`jace-s-platform`) | `e2b51eaed80186dc8c73896beb90f1f3900a2cff` (not yet pushed; remote `main` was `2e837b1` at the time of recording) |
+| Registered app ID | `21` (`REACT_APP_NOTICE_APP_ID=21`) |
 | Verified deployed version | Not verified yet |
+
+Server state at recording (reported by the operator): production `/health` already returns schemaVersion 1.
+The server currently ignores `?app` and returns all-app notices only; per-app notices start working after the
+server deploy with no client change. `https://visualizer.jace-s.com` is not an allowed origin yet, so the login UI
+stays hidden on `gpt-3d-visualizer.vercel.app` (default `REACT_APP_LOGIN_HOSTS`).
 
 ## Build Settings
 
@@ -55,4 +60,5 @@ Pending (needs the real deployment):
 - [ ] `https://visualizer.jace-s.com` added to the server's allowed origins before deploying
 - [ ] Real login → name → logout on jace-s.com → login button after focus
 - [ ] Login UI not shown on `gpt-3d-visualizer.vercel.app`
-- [ ] Fill in server base commit, app ID and deployed version above
+- [ ] Set `REACT_APP_NOTICE_APP_ID=21` in the Vercel project (Production and Preview)
+- [ ] Fill in the verified deployed version above
