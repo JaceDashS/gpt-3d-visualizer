@@ -1,28 +1,29 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useServiceHealth } from '../../contexts/ServiceHealthContext';
-import type { ServiceHealth, ServiceStatus } from '../../services/health';
+import type { ServiceHealth } from '../../services/health';
 import styles from './ServiceNoticeToasts.module.css';
 
-// jace-s 공지 표시 규칙: 위에서 내려오는 토스트. 공지는 8초 뒤 닫히고, 장애 안내는 닫을 때까지 남는다
+// jace-s 공지 표시 규칙: 위에서 내려오는 토스트. 서버에 연결되면 공지는 8초 뒤 닫힌다.
+// 서버에 연결할 수 없으면 공지가 있을 때는 공지를, 없을 때는 고정 문구를 닫을 때까지 보여준다
 const NOTICE_MS = 8000;
-
-const STATUS_FALLBACK: Record<Exclude<ServiceStatus, 'operational'>, string> = {
-  maintenance: 'Maintenance',
-  unavailable: 'Service unavailable',
-  unknown: '서비스 상태를 확인할 수 없습니다.',
-};
+// 응답을 읽지 못한 경우(unknown)도 서버에 연결할 수 없는 것과 같으므로 같은 고정 문구를 쓴다
+const OUTAGE_MESSAGE = 'Unable to connect to the server.';
 
 interface Toast {
   id: string;
   kind: 'status' | 'notice';
   title: string;
+  // 직접 닫을 때까지 남는다
+  sticky: boolean;
 }
 
 const toastsFor = (health: ServiceHealth): Toast[] => {
-  const status: Toast[] = health.serviceStatus === 'operational' ? []
-    : [{ id: `status-${health.serviceStatus}`, kind: 'status', title: health.message || STATUS_FALLBACK[health.serviceStatus] }];
-  return [...status, ...health.announcements.map(a => ({ id: a.id, kind: 'notice' as const, title: a.title }))];
+  const down = health.serviceStatus !== 'operational';
+  const notices = health.announcements.map(a => ({ id: a.id, kind: 'notice' as const, title: a.title, sticky: down }));
+  // 공지가 있으면 장애 문구 대신 공지를 보여준다. 예정된 점검은 공지로 미리 알린다
+  if (notices.length > 0) return notices;
+  return down ? [{ id: `status-${health.serviceStatus}`, kind: 'status', title: health.message || OUTAGE_MESSAGE, sticky: true }] : [];
 };
 
 const ToastItem: React.FC<{ toast: Toast; onClose: () => void }> = ({ toast, onClose }) => {
@@ -30,10 +31,10 @@ const ToastItem: React.FC<{ toast: Toast; onClose: () => void }> = ({ toast, onC
   const close = useRef(onClose);
   close.current = onClose;
   useEffect(() => {
-    if (toast.kind !== 'notice') return undefined;
+    if (toast.sticky) return undefined;
     const timer = window.setTimeout(() => close.current(), NOTICE_MS);
     return () => window.clearTimeout(timer);
-  }, [toast.kind]);
+  }, [toast.sticky]);
   const status = toast.kind === 'status';
   return (
     <div className={`${styles.toast} ${status ? styles.status : styles.notice}`} role={status ? 'alert' : 'status'}>

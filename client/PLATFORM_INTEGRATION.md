@@ -36,11 +36,12 @@ Cloud Run cleanup: workflow removed in `c170682b7553091fcbedcd642ebfa70b846df74a
   `message` and announcement `title` are rendered as plain text. Announcements are titles only (platform commit
   `1164264`): shown from publication until an administrator ends them, with no period or maintenance schedule.
   `maintenance` status (sent only by older servers) still disables the Visualize button.
-- Display (same rule as jace-s.com): toasts slide down from the top center, 12 px top gap, width
-  `min(512px, 100% - 24px)`, stacked in order. A status toast with `message` comes first when `serviceStatus` is not
-  operational; it stays until closed (role alert). Then one toast per announcement title, closed after 8 s (role status).
-  Every toast has a close button; clicks outside pass through. Code: `client/src/components/status/ServiceNoticeToasts.tsx`,
-  mounted once in `App.tsx` and rendered into `document.body`.
+- Display (same rule as jace-s.com, platform commit `7b05823`): toasts slide down from the top center, 12 px top gap,
+  width `min(512px, 100% - 24px)`, in this app's dark theme colors. While the server is reachable each announcement
+  title toast closes after 8 s. When `serviceStatus` is not operational (including unknown on fetch or parse failure),
+  announcement titles are shown instead of `message` and stay until closed; without announcements one toast
+  "Unable to connect to the server." (or the server `message`) stays until closed. Code:
+  `client/src/components/status/ServiceNoticeToasts.tsx`, mounted once in `App.tsx` and rendered into `document.body`.
 - Login (only on `REACT_APP_LOGIN_HOSTS`): `GET /api/auth/session` with `credentials: 'include'` on entry,
   on window focus, and when the opened window closes. Login and account pages open in a new window.
   Network failure → "Failed to check login status" (not treated as logged out). No session-based POST/PUT/DELETE.
