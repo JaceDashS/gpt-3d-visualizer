@@ -7,7 +7,7 @@ interface ServiceHealthContextType {
 
 const ServiceHealthContext = createContext<ServiceHealthContextType>({ health: null });
 
-// 앱 진입 시 /health를 한 번만 조회한다 (공지는 같은 응답에 포함)
+// 앱 진입 시 /health와 /notices를 한 번씩 조회한다
 export const ServiceHealthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [health, setHealth] = useState<ServiceHealth | null>(null);
 
