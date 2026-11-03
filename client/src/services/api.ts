@@ -124,7 +124,8 @@ export const feedbackApi = {
         userPassword: comment.userPassword,
       };
       
-      const requestUrl = `${API_BASE_URL}/api/comments`;
+      // api.jace-s.com은 /api 없이 쓴다
+      const requestUrl = `${API_BASE_URL}/comments`;
       // console.log('[API] Feedback Request URL:', requestUrl);
       // console.log('[API] API_BASE_URL:', API_BASE_URL);
 

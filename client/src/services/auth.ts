@@ -44,10 +44,10 @@ export type SessionState =
   | { status: 'unauthenticated' }
   | { status: 'error' }; // 네트워크/응답 오류: 로그아웃으로 단정하지 않는다
 
-// GET /api/auth/session. 쿠키 값은 읽을 수 없고, 서버 판정만 사용한다
+// GET /auth/session (api.jace-s.com). 쿠키 값은 읽을 수 없고, 서버 판정만 사용한다
 export const fetchSession = async (): Promise<SessionState> => {
   try {
-    const response = await fetch(platformUrl('/api/auth/session').toString(), {
+    const response = await fetch(platformUrl('/auth/session').toString(), {
       method: 'GET',
       credentials: 'include',
       cache: 'no-store',
