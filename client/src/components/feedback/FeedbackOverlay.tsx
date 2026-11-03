@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import styles from './FeedbackOverlay.module.css';
 import { feedbackApi, FeedbackRateLimitError } from '../../services/api';
-import { API_BASE_URL } from '../../config/api';
+import { SITE_URL } from '../../config/api';
 import { OVERLAY_SLIDE_DOWN_DURATION } from '../../constants/animation';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { feedbackTexts } from '../../locales/feedback';
@@ -195,7 +195,7 @@ const FeedbackOverlay: React.FC<FeedbackOverlayProps> = ({ isOpen, onClose }) =>
           </p>
 
           <a
-            href={`${API_BASE_URL}/comments`}
+            href={`${SITE_URL}/comments`}
             className={styles.viewAllLink}
             target="_blank"
             rel="noopener noreferrer"

@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL, SITE_URL } from '../config/api';
 import type { Language } from '../pages/HowItWorksPage';
 
 // 로그인은 jace-s.com과 같은 사이트인 호스트에서만 동작한다 (세션 쿠키 SameSite strict).
@@ -16,16 +16,21 @@ export const isLoginSupportedHost = (): boolean => {
   return getLoginHosts().includes(window.location.hostname.toLowerCase());
 };
 
+// API 요청 주소
 const platformUrl = (path: string): URL =>
   new URL(path, `${API_BASE_URL.replace(/\/+$/, '')}/`);
 
+// 로그인, 계정 같은 jace-s.com 화면 주소
+const siteUrl = (path: string): URL =>
+  new URL(path, `${SITE_URL.replace(/\/+$/, '')}/`);
+
 export const buildLoginUrl = (language: Language): string => {
-  const url = platformUrl('/login');
+  const url = siteUrl('/login');
   url.searchParams.set('lang', language);
   return url.toString();
 };
 
-export const buildAccountUrl = (): string => platformUrl('/account').toString();
+export const buildAccountUrl = (): string => siteUrl('/account').toString();
 
 export interface SessionUser {
   id: number | string;
