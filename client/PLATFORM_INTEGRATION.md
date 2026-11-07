@@ -38,8 +38,8 @@ Cloud Run cleanup: workflow removed in `c170682b7553091fcbedcd642ebfa70b846df74a
   `1164264`): shown from publication until an administrator ends them, with no period or maintenance schedule.
   `maintenance` status (sent only by older servers) still disables the Visualize button.
 - Display (same rule as jace-s.com, platform commit `7b05823`): toasts slide down from the top center, 12 px top gap,
-  width `min(512px, 100% - 24px)`, in this app's dark theme colors. While the server is reachable each announcement
-  title toast closes after 8 s. When `serviceStatus` is not operational (including unknown on fetch or parse failure),
+  width `min(512px, 100% - 24px)`, in this app's dark theme colors. Several announcements share one toast with one bulleted line each (never stacked
+  toasts). While the server is reachable the announcement toast closes after 8 s. When `serviceStatus` is not operational (including unknown on fetch or parse failure),
   announcement titles are shown instead of `message` and stay until closed; without announcements one toast
   "Unable to connect to the server." (or the server `message`) stays until closed. Code:
   `client/src/components/status/ServiceNoticeToasts.tsx`, mounted once in `App.tsx` and rendered into `document.body`.
