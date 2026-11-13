@@ -25,4 +25,11 @@ lerna-debug.log*
 .cursor/
 
 # Documentation
-docs/
+/docs/spell-check-proposal.md
+*.private.*
+
+tmp/
+
+scripts/debug/
+
+docs/.agent/

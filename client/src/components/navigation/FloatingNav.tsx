@@ -2,13 +2,12 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 interface FloatingNavProps {
-  onToggleAbout: () => void;
   onToggleFeedback: () => void;
   onNavigate: () => void;
 }
 
-// 우측 하단 텍스트 네비게이션: Home | How it works | About | Feedback
-const FloatingNav: React.FC<FloatingNavProps> = ({ onToggleAbout, onToggleFeedback, onNavigate }) => {
+// 우측 하단 텍스트 네비게이션: Home | How it works | Feedback
+const FloatingNav: React.FC<FloatingNavProps> = ({ onToggleFeedback, onNavigate }) => {
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
@@ -30,13 +29,6 @@ const FloatingNav: React.FC<FloatingNavProps> = ({ onToggleAbout, onToggleFeedba
       >
         How it works
       </Link>
-      <span className="separator">|</span>
-      <button
-        type="button"
-        onClick={onToggleAbout}
-      >
-        About
-      </button>
       <span className="separator">|</span>
       <button
         type="button"

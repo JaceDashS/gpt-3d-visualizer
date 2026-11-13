@@ -200,3 +200,5 @@ Service status and announcements for this app, called once on entry.
 ## License
 
 Private project - All rights reserved.
+
+- [Documentation](docs/00-index.md) — Product requirements and navigation design.
