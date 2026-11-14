@@ -1,4 +1,5 @@
 import { API_BASE_URL, API_PREFIX } from '../config/api';
+import { getFeedbackAppId } from './health';
 
 export interface VisualizeRequest {
   input_text: string;
@@ -95,7 +96,8 @@ export const visualizeApi = {
 export interface CommentRequest {
   parentHeaderId: number | null;
   content: string;
-  userPassword: string;
+  userPassword?: string;
+  sourceAppId: number;
 }
 
 export interface CommentResponse {
@@ -113,28 +115,37 @@ export const feedbackApi = {
   /**
    * 피드백(코멘트)을 서버에 제출합니다.
    * IP는 서버에서 자동으로 추출되어 해싱됩니다.
-   * @param comment 코멘트 데이터 (parentHeaderId는 null, content와 userPassword는 필수)
+   * @param comment 코멘트 데이터 (로그인 세션 사용 시 csrfToken 포함, 비로그인 시 userPassword 필수)
    * @returns 생성된 코멘트 ID
    */
-  async submitFeedback(comment: { content: string; userPassword: string }): Promise<CommentResponse> {
+  async submitFeedback(comment: {
+    content: string;
+    userPassword?: string;
+    sourceAppId?: number;
+    csrfToken?: string | null;
+  }): Promise<CommentResponse> {
     try {
+      const useSession = Boolean(comment.csrfToken);
       const requestBody: CommentRequest = {
         parentHeaderId: null, // 최상위 코멘트이므로 null
         content: comment.content,
-        userPassword: comment.userPassword,
+        sourceAppId: comment.sourceAppId ?? getFeedbackAppId(),
+        ...(useSession ? {} : { userPassword: comment.userPassword }),
       };
       
       // api.jace-s.com은 /api 없이 쓴다
       const requestUrl = `${API_BASE_URL}/comments`;
-      // console.log('[API] Feedback Request URL:', requestUrl);
-      // console.log('[API] API_BASE_URL:', API_BASE_URL);
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (useSession && comment.csrfToken) {
+        headers['x-csrf-token'] = comment.csrfToken;
+      }
 
       const response = await fetch(requestUrl, {
         method: 'POST',
-        credentials: 'omit',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        credentials: useSession ? 'include' : 'omit',
+        headers,
         body: JSON.stringify(requestBody),
       });
 

@@ -9,7 +9,7 @@ API server: `https://jace-s.com` (`jace-s-platform` repository).
 | --- | --- |
 | Client base commit | `0f1c15c028073ce238e7e4f61e1eec5dc326cce1` |
 | Server base commit (`jace-s-platform`) | `e2b51eaed80186dc8c73896beb90f1f3900a2cff` (not yet pushed; remote `main` was `2e837b1` at the time of recording) |
-| Registered app ID | `21` (`REACT_APP_NOTICE_APP_ID=21`) |
+| Registered app ID | `3` (`REACT_APP_NOTICE_APP_ID=3`, default `CANONICAL_APP_ID=3`) |
 | Verified deployed version | Not verified yet |
 
 Server state at recording (reported by the operator): production `/health` already returns schemaVersion 1.

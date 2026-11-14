@@ -294,3 +294,33 @@
   font-style: italic;
 }
 
+.sessionRow {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 13px;
+  color: #c9cdd2;
+}
+
+.postingAs strong {
+  color: var(--color-white);
+}
+
+.signInLink {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: var(--color-blue);
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0;
+  cursor: pointer;
+}
+
+.signInLink:hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+

@@ -16,6 +16,8 @@
   "errorRateLimited": "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
   "closeLabel": "피드백 닫기",
   "showPassword": "비밀번호 표시",
-  "hidePassword": "비밀번호 숨기기"
+  "hidePassword": "비밀번호 숨기기",
+  "postingAs": "작성 계정",
+  "signInPrompt": "로그인 (일반·구글)"
 }
 

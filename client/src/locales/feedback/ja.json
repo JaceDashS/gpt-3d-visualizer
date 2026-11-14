@@ -16,6 +16,8 @@
   "errorRateLimited": "リクエストが多すぎます。しばらくしてから再度お試しください。",
   "closeLabel": "フィードバックを閉じる",
   "showPassword": "パスワードを表示",
-  "hidePassword": "パスワードを非表示"
+  "hidePassword": "パスワードを非表示",
+  "postingAs": "投稿アカウント",
+  "signInPrompt": "ログイン（通常・Google）"
 }
 

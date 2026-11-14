@@ -16,6 +16,8 @@
   "errorRateLimited": "Too many requests. Please try again later.",
   "closeLabel": "Close feedback",
   "showPassword": "Show password",
-  "hidePassword": "Hide password"
+  "hidePassword": "Hide password",
+  "postingAs": "Posting as",
+  "signInPrompt": "Sign in (password or Google)"
 }
 

@@ -16,6 +16,8 @@
   "errorRateLimited": "请求过多，请稍后再试。",
   "closeLabel": "关闭反馈",
   "showPassword": "显示密码",
-  "hidePassword": "隐藏密码"
+  "hidePassword": "隐藏密码",
+  "postingAs": "发布账号",
+  "signInPrompt": "登录（密码或 Google）"
 }
 

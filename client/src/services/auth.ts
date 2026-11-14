@@ -40,7 +40,7 @@ export interface SessionUser {
 
 export type SessionState =
   | { status: 'checking' }
-  | { status: 'authenticated'; user: SessionUser }
+  | { status: 'authenticated'; user: SessionUser; csrfToken: string | null }
   | { status: 'unauthenticated' }
   | { status: 'error' }; // 네트워크/응답 오류: 로그아웃으로 단정하지 않는다
 
@@ -56,13 +56,15 @@ export const fetchSession = async (): Promise<SessionState> => {
     if (response.status === 401) return { status: 'unauthenticated' };
     if (!response.ok) return { status: 'error' };
 
-    const body = (await response.json()) as { user?: Record<string, unknown> };
+    const body = (await response.json()) as { user?: Record<string, unknown>; csrfToken?: unknown };
     const user = body?.user;
     if (!user || typeof user !== 'object') return { status: 'error' };
 
     const username = typeof user.username === 'string' ? user.username : '';
     const displayName =
       typeof user.displayName === 'string' && user.displayName ? user.displayName : username;
+    const csrfToken =
+      typeof body.csrfToken === 'string' && body.csrfToken ? body.csrfToken : null;
 
     return {
       status: 'authenticated',
@@ -71,6 +73,7 @@ export const fetchSession = async (): Promise<SessionState> => {
         username,
         displayName,
       },
+      csrfToken,
     };
   } catch {
     return { status: 'error' };

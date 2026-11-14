@@ -30,6 +30,8 @@ export interface ServiceHealth {
   announcements: Announcement[];
 }
 
+export const CANONICAL_APP_ID = 3;
+
 // 빌드 설정의 등록 앱 ID. 양의 정수가 아니면 null (모든 앱 대상 공지만 받게 됨)
 export const getNoticeAppId = (): number | null => {
   const raw = (process.env.REACT_APP_NOTICE_APP_ID || '').trim();
@@ -37,6 +39,9 @@ export const getNoticeAppId = (): number | null => {
   const id = Number(raw);
   return Number.isSafeInteger(id) ? id : null;
 };
+
+// 피드백(댓글) 출처용 앱 ID. 설정값이 없으면 정식 등록 ID(3: GPT 3D Visualizer)를 사용한다
+export const getFeedbackAppId = (): number => getNoticeAppId() ?? CANONICAL_APP_ID;
 
 const buildUrl = (path: string, appId: number | null = null): string => {
   const url = new URL(path, `${API_BASE_URL.replace(/\/+$/, '')}/`);

@@ -17,5 +17,7 @@ export interface FeedbackTexts {
   closeLabel: string;
   showPassword: string;
   hidePassword: string;
+  postingAs: string;
+  signInPrompt: string;
 }
 

@@ -5,6 +5,8 @@ import { SITE_URL } from '../../config/api';
 import { OVERLAY_SLIDE_DOWN_DURATION } from '../../constants/animation';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { feedbackTexts } from '../../locales/feedback';
+import { useAuthSession } from '../../hooks/useAuthSession';
+import { buildLoginUrl, isLoginSupportedHost } from '../../services/auth';
 
 interface FeedbackOverlayProps {
   isOpen: boolean;
@@ -18,6 +20,14 @@ interface FeedbackFormData {
 
 const FeedbackOverlay: React.FC<FeedbackOverlayProps> = ({ isOpen, onClose }) => {
   const { language, setLanguage } = useLanguage();
+  const loginHost = isLoginSupportedHost();
+  const { session, openPlatformWindow } = useAuthSession(loginHost && isOpen);
+  const signedInUser =
+    loginHost && session.status === 'authenticated' && Boolean(session.csrfToken)
+      ? session.user
+      : null;
+  const activeCsrfToken =
+    loginHost && session.status === 'authenticated' ? session.csrfToken : null;
   const [formData, setFormData] = useState<FeedbackFormData>({
     password: '',
     content: '',
@@ -85,8 +95,8 @@ const FeedbackOverlay: React.FC<FeedbackOverlayProps> = ({ isOpen, onClose }) =>
       return;
     }
 
-    // 비밀번호 필수 검증
-    if (!formData.password.trim()) {
+    // 비밀번호 필수 검증 (비로그인 작성일 때만)
+    if (!signedInUser && !formData.password.trim()) {
       setSubmitStatus('error');
       setErrorMessage(texts.errorPassword);
       return;
@@ -99,7 +109,9 @@ const FeedbackOverlay: React.FC<FeedbackOverlayProps> = ({ isOpen, onClose }) =>
     try {
       await feedbackApi.submitFeedback({
         content: formData.content.trim(),
-        userPassword: formData.password,
+        ...(signedInUser
+          ? { csrfToken: activeCsrfToken }
+          : { userPassword: formData.password }),
       });
 
       setSubmitStatus('success');
@@ -209,46 +221,65 @@ const FeedbackOverlay: React.FC<FeedbackOverlayProps> = ({ isOpen, onClose }) =>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className={styles.form}>
-              <div className={styles.formGroup}>
-                <label htmlFor="feedback-password" className={styles.label}>
-                  {texts.passwordLabel} <span className={styles.required}>*</span>
-                </label>
-                <div className={styles.passwordInputWrapper}>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="feedback-password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className={styles.input}
-                    placeholder={texts.passwordPlaceholder}
-                    required
-                    disabled={isSubmitting}
-                  />
-                  <button
-                    type="button"
-                    className={styles.passwordToggle}
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={isSubmitting}
-                    aria-label={showPassword ? texts.hidePassword : texts.showPassword}
-                  >
-                    {showPassword ? (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                        <line x1="1" y1="1" x2="23" y2="23"></line>
-                      </svg>
-                    ) : (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                      </svg>
-                    )}
-                  </button>
+              {signedInUser ? (
+                <div className={styles.sessionRow}>
+                  <span className={styles.postingAs}>
+                    {texts.postingAs}: <strong>{signedInUser.displayName}</strong>
+                  </span>
                 </div>
-                <p className={styles.helpText}>
-                  {texts.passwordHelp}
-                </p>
-              </div>
+              ) : (
+                <>
+                  {loginHost && session.status === 'unauthenticated' && (
+                    <button
+                      type="button"
+                      className={styles.signInLink}
+                      onClick={() => openPlatformWindow(buildLoginUrl(language))}
+                    >
+                      {texts.signInPrompt}
+                    </button>
+                  )}
+                  <div className={styles.formGroup}>
+                    <label htmlFor="feedback-password" className={styles.label}>
+                      {texts.passwordLabel} <span className={styles.required}>*</span>
+                    </label>
+                    <div className={styles.passwordInputWrapper}>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        id="feedback-password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        className={styles.input}
+                        placeholder={texts.passwordPlaceholder}
+                        required
+                        disabled={isSubmitting}
+                      />
+                      <button
+                        type="button"
+                        className={styles.passwordToggle}
+                        onClick={() => setShowPassword(!showPassword)}
+                        disabled={isSubmitting}
+                        aria-label={showPassword ? texts.hidePassword : texts.showPassword}
+                      >
+                        {showPassword ? (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                            <line x1="1" y1="1" x2="23" y2="23"></line>
+                          </svg>
+                        ) : (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    <p className={styles.helpText}>
+                      {texts.passwordHelp}
+                    </p>
+                  </div>
+                </>
+              )}
 
               <div className={styles.formGroup}>
                 <label htmlFor="feedback-content" className={styles.label}>
@@ -274,7 +305,7 @@ const FeedbackOverlay: React.FC<FeedbackOverlayProps> = ({ isOpen, onClose }) =>
               <button
                 type="submit"
                 className={styles.submitButton}
-                disabled={isSubmitting || !formData.content.trim() || !formData.password.trim()}
+                disabled={isSubmitting || !formData.content.trim() || (!signedInUser && !formData.password.trim())}
               >
                 {isSubmitting ? texts.submitting : texts.submitButton}
               </button>
