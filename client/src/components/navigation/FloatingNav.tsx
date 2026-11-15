@@ -6,7 +6,9 @@ interface FloatingNavProps {
   onNavigate: () => void;
 }
 
-// 우측 하단 텍스트 네비게이션: Home | How it works | Feedback
+const PLATFORM_MAIN_URL = `${(process.env.REACT_APP_SITE_URL || 'https://jace-s.com').replace(/\/+$/, '')}/apps`;
+
+// 우측 하단 텍스트 네비게이션: Home | How it works | Feedback | Main page
 const FloatingNav: React.FC<FloatingNavProps> = ({ onToggleFeedback, onNavigate }) => {
   const location = useLocation();
 
@@ -36,6 +38,10 @@ const FloatingNav: React.FC<FloatingNavProps> = ({ onToggleFeedback, onNavigate 
       >
         Feedback
       </button>
+      <span className="separator">|</span>
+      <a href={PLATFORM_MAIN_URL}>
+        Main page
+      </a>
     </nav>
   );
 };
