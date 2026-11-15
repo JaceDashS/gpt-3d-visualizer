@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import styles from './FeedbackOverlay.module.css';
 import { feedbackApi, FeedbackRateLimitError } from '../../services/api';
 import { SITE_URL } from '../../config/api';
@@ -38,6 +38,30 @@ const FeedbackOverlay: React.FC<FeedbackOverlayProps> = ({ isOpen, onClose }) =>
   const [isMounted, setIsMounted] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const panel = useRef<HTMLDivElement>(null);
+  const handlers = useRef({ onClose, isSubmitting });
+  handlers.current = { onClose, isSubmitting };
+  useEffect(() => {
+    if (!isMounted) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    panel.current?.querySelector<HTMLElement>('textarea')?.focus();
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault(); event.stopImmediatePropagation();
+        if (!handlers.current.isSubmitting) handlers.current.onClose();
+      }
+      if (event.key !== 'Tab') return;
+      const nodes = Array.from(panel.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), textarea:not(:disabled)') ?? []);
+      const first = nodes[0], last = nodes[nodes.length - 1];
+      if (!first) { event.preventDefault(); panel.current?.focus(); }
+      else if (event.shiftKey && (document.activeElement === first || !panel.current?.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && (document.activeElement === last || !panel.current?.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
+    };
+    window.addEventListener('keydown', keydown, true);
+    return () => { window.removeEventListener('keydown', keydown, true); document.body.style.overflow = overflow; previous?.focus(); };
+  }, [isMounted]);
 
   // 다국어 텍스트
   const texts = useMemo(() => feedbackTexts[language], [language]);
@@ -137,7 +161,7 @@ const FeedbackOverlay: React.FC<FeedbackOverlayProps> = ({ isOpen, onClose }) =>
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     // backdrop을 직접 클릭한 경우에만 닫기 (sheet 내부 클릭은 무시)
-    if (e.target === e.currentTarget) {
+    if (e.target === e.currentTarget && !isSubmitting) {
       onClose();
     }
   };
@@ -152,9 +176,12 @@ const FeedbackOverlay: React.FC<FeedbackOverlayProps> = ({ isOpen, onClose }) =>
       className={styles.backdrop} 
       aria-modal="true" 
       role="dialog"
+      aria-labelledby="visualizer-feedback-title"
       onClick={handleBackdropClick}
     >
       <div 
+        ref={panel}
+        tabIndex={-1}
         className={`${styles.sheet} ${isClosing ? styles.closing : ''}`}
         onClick={handleSheetClick}
       >
@@ -170,7 +197,7 @@ const FeedbackOverlay: React.FC<FeedbackOverlayProps> = ({ isOpen, onClose }) =>
 
         <div className={styles.content}>
           <div className={styles.headerRow}>
-            <h2 className={styles.title}>{texts.title}</h2>
+            <h2 id="visualizer-feedback-title" className={styles.title}>{texts.title}</h2>
             <div className={styles.langGroup} role="group" aria-label="Language">
               <button
                 type="button"

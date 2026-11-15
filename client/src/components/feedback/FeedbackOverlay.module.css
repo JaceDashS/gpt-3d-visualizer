@@ -324,3 +324,7 @@
   text-decoration: underline;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .sheet, .closing { animation: none; transform: none; opacity: 1; }
+}
+
