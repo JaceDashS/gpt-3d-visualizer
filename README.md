@@ -1,5 +1,7 @@
 # GPT Token Embedding Visualizer
 
+[Public app guide](https://jace-s.com/en/apps/gpt-3d-visualizer)
+
 A 3D visualization tool for GPT token embeddings. This application visualizes how tokens are processed and transformed through vector space using PCA (Principal Component Analysis), providing an intuitive understanding of how language models work.
 
 ## Features
