@@ -1,3 +1,5 @@
+> Archived 2026-11-24: Historical proposal. The implemented spell-check command is listed in the product README.
+
 # 영어 스펠링 체크 시스템 제안서
 
 ## 1. 개요

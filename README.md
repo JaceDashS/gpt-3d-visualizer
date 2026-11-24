@@ -79,7 +79,7 @@ gpt-visualizer/
 npm run client:start
 ```
 
-Set `REACT_APP_API_URL` (e.g. `https://jace-s.com`), `REACT_APP_API_PREFIX` (e.g. `/api/gptvisualizer`) and `REACT_APP_NOTICE_APP_ID` (`21`) for the client build. See `client/PLATFORM_INTEGRATION.md`.
+Set `REACT_APP_API_URL` (e.g. `https://jace-s.com`), `REACT_APP_API_PREFIX` (e.g. `/api/gptvisualizer`) and `REACT_APP_NOTICE_APP_ID` (`21`) for the client build. See [Platform Integration](docs/api/10-platform-integration.md).
 
 ## Model Information
 
@@ -107,7 +107,7 @@ The application uses **Llama-3.2-1B-Instruct-Q4_K_M** model from Hugging Face:
 
 ## API Endpoints
 
-The client calls the following platform endpoints. See `client/PLATFORM_INTEGRATION.md` for the full contract (status codes, timeouts, credentials).
+The client calls the following platform endpoints. See [Platform Integration](docs/api/10-platform-integration.md) for the full contract (status codes, timeouts, credentials).
 
 ### `POST https://jace-s.com/api/gptvisualizer/visualize`
 

@@ -1,9 +1,9 @@
-# jace-s.com Platform Integration Record
+# Platform Integration Record
 
 The React client in `client/` is the only source of the Visualizer UI.
 API server: `https://jace-s.com` (`jace-s-platform` repository).
 
-## Baseline
+## Historical Baseline
 
 | Item | Value |
 | --- | --- |
